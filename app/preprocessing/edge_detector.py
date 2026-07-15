@@ -9,9 +9,8 @@ from app.utils.logger import logger
 
 
 class EdgeDetector:
-    """
-    Performs edge detection on attendance sheet images.
-    """
+    
+    # Performs edge detection on attendance sheet images.
 
     DEFAULT_BLUR_KERNEL = (5, 5)
     DEFAULT_THRESHOLD1 = 50
@@ -24,28 +23,8 @@ class EdgeDetector:
         threshold2: int = DEFAULT_THRESHOLD2,
         blur_kernel: tuple[int, int] = DEFAULT_BLUR_KERNEL,
     ) -> np.ndarray:
-        """
-        Detect edges using Canny.
-
-        Parameters
-        ----------
-        image_data : ImageData
-            Image container.
-
-        threshold1 : int
-            Lower Canny threshold.
-
-        threshold2 : int
-            Upper Canny threshold.
-
-        blur_kernel : tuple
-            Gaussian blur kernel.
-
-        Returns
-        -------
-        np.ndarray
-            Edge image.
-        """
+        
+        # Detect edges using Canny.
 
         try:
 
@@ -123,10 +102,8 @@ class EdgeDetector:
     def auto_detect(
         image_data: ImageData,
     ) -> np.ndarray:
-        """
-        Automatic edge detection using
-        image median.
-        """
+        
+        # Automatic edge detection using image median.
 
         try:
 
@@ -182,9 +159,8 @@ class EdgeDetector:
         edges: np.ndarray,
         iterations: int = 1,
     ) -> np.ndarray:
-        """
-        Dilate edges.
-        """
+        
+        # Dilate edges.
 
         kernel = np.ones(
             (3, 3),
