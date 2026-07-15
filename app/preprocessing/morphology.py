@@ -32,6 +32,9 @@ class Morphology:
             image_data
         )
 
+        if len(source.shape) == 3 and source.shape[2] == 3:
+            source = cv2.cvtColor(source, cv2.COLOR_BGR2GRAY)
+
         result = cv2.morphologyEx(
             source,
             cv2.MORPH_OPEN,
@@ -59,6 +62,9 @@ class Morphology:
         source = ImageSelector.get_latest(
             image_data
         )
+
+        if len(source.shape) == 3 and source.shape[2] == 3:
+            source = cv2.cvtColor(source, cv2.COLOR_BGR2GRAY)
 
         result = cv2.morphologyEx(
             source,

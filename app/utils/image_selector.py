@@ -25,29 +25,29 @@ class ImageSelector:
 
         priority = (
 
-            image_data.closed_image,
+            getattr(image_data, "closed_image", None),
 
-            image_data.opened_image,
+            getattr(image_data, "opened_image", None),
 
-            image_data.denoised_image,
+            getattr(image_data, "denoised_image", None),
 
-            image_data.bilateral_image,
+            getattr(image_data, "bilateral_image", None),
 
-            image_data.gaussian_image,
+            getattr(image_data, "gaussian_image", None),
 
-            image_data.median_image,
+            getattr(image_data, "median_image", None),
 
-            image_data.clahe_image,
+            getattr(image_data, "clahe_image", None),
 
-            image_data.equalized_image,
+            getattr(image_data, "equalized_image", None),
 
-            image_data.contrast_image,
+            getattr(image_data, "contrast_image", None),
 
-            image_data.brightness_image,
+            getattr(image_data, "brightness_image", None),
 
-            image_data.grayscale_image,
+            getattr(image_data, "grayscale_image", None),
 
-            image_data.perspective_image,
+            getattr(image_data, "perspective_image", None),
 
             image_data.image,
         )

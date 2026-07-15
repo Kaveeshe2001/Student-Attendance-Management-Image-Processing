@@ -39,28 +39,21 @@ class MedianFilter:
             # Select latest available image
             # -----------------------------
 
+            source = None
+
             if image_data.clahe_image is not None:
-
                 source = image_data.clahe_image
-
             elif image_data.equalized_image is not None:
-
                 source = image_data.equalized_image
-
             elif image_data.contrast_image is not None:
-
                 source = image_data.contrast_image
-
             elif image_data.brightness_image is not None:
-
                 source = image_data.brightness_image
-
             elif image_data.grayscale_image is not None:
-
                 source = image_data.grayscale_image
-
+            elif image_data.image is not None:
+                source = image_data.image
             else:
-
                 raise ImageProcessingError(
                     "No grayscale image available."
                 )

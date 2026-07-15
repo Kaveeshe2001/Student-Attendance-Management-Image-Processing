@@ -33,6 +33,18 @@ class ImageData:
 
     clahe_image: Optional[np.ndarray] = None
 
+    median_image: Optional[np.ndarray] = None
+
+    gaussian_image: Optional[np.ndarray] = None
+
+    bilateral_image: Optional[np.ndarray] = None
+
+    denoised_image: Optional[np.ndarray] = None
+
+    closed_image: Optional[np.ndarray] = None
+
+    opened_image: Optional[np.ndarray] = None
+
     blurred_image: Optional[np.ndarray] = None
 
     threshold_image: Optional[np.ndarray] = None
