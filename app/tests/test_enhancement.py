@@ -1,187 +1,335 @@
-from __future__ import annotations
+from pathlib import Path
 
-import cv2
-import numpy as np
+import pytest
 
-from app.models.image_data import ImageData
+from app.preprocessing.median_filter import MedianFilter
+from app.preprocessing.gaussian_filter import GaussianFilter
+from app.preprocessing.bilateral_filter import BilateralFilter
+from app.preprocessing.denoiser import Denoiser
+from app.preprocessing.morphology import Morphology
+from app.services.enhancement_service import EnhancementService
+from app.services.image_service import ImageService
 from app.utils.exceptions import ImageProcessingError
-from app.utils.image_statistics import ImageStatistics
-from app.utils.logger import logger
 
 
-class MedianFilter:
+TEST_IMAGE = Path(
+    "data/images/1.jpeg"
+)
+
+
+@pytest.fixture
+def image_data():
     
-    # Median filtering implementation.
+    # Load sample image.
 
-    DEFAULT_KERNEL_SIZE = 5
+    return ImageService.load_image(TEST_IMAGE)
 
-    @staticmethod
-    def apply(
-        image_data: ImageData,
-        kernel_size: int = DEFAULT_KERNEL_SIZE,
-    ) -> np.ndarray:
-        
-        # Apply median filtering.
 
-        try:
+# =====================================================
+# Median Filter
+# =====================================================
 
-            logger.info(
-                "Applying median filter..."
-            )
+def test_median_filter(image_data):
 
-            if image_data is None:
+    result = MedianFilter.apply(image_data)
 
-                raise ImageProcessingError(
-                    "ImageData cannot be None."
-                )
+    assert result is not None
 
-            # -----------------------------
-            # Select latest available image
-            # -----------------------------
+    assert image_data.median_image is not None
 
-            if image_data.clahe_image is not None:
 
-                source = image_data.clahe_image
+def test_median_statistics(image_data):
 
-            elif image_data.equalized_image is not None:
+    MedianFilter.apply(image_data)
 
-                source = image_data.equalized_image
+    stats = MedianFilter.statistics(image_data)
 
-            elif image_data.contrast_image is not None:
+    assert stats["Width"] > 0
 
-                source = image_data.contrast_image
+    assert stats["Height"] > 0
 
-            elif image_data.brightness_image is not None:
 
-                source = image_data.brightness_image
+# =====================================================
+# Gaussian Filter
+# =====================================================
 
-            elif image_data.grayscale_image is not None:
+def test_gaussian_filter(image_data):
 
-                source = image_data.grayscale_image
+    MedianFilter.apply(image_data)
 
-            else:
+    result = GaussianFilter.apply(image_data)
 
-                raise ImageProcessingError(
-                    "No grayscale image available."
-                )
+    assert result is not None
 
-            # -----------------------------
-            # Validate kernel
-            # -----------------------------
+    assert image_data.gaussian_image is not None
 
-            if kernel_size < 3:
 
-                kernel_size = 3
+def test_gaussian_statistics(image_data):
 
-            if kernel_size % 2 == 0:
+    MedianFilter.apply(image_data)
 
-                kernel_size += 1
+    GaussianFilter.apply(image_data)
 
-            filtered = cv2.medianBlur(
-                source,
-                kernel_size,
-            )
+    stats = GaussianFilter.statistics(image_data)
 
-            image_data.median_image = filtered
+    assert stats["Width"] > 0
 
-            image_data.processing_history[
-                "Median"
-            ] = filtered
 
-            image_data.set_stage(
-                "Median Filtering"
-            )
+# =====================================================
+# Bilateral Filter
+# =====================================================
 
-            logger.info(
-                "Median filter completed."
-            )
+def test_bilateral_filter(image_data):
 
-            return filtered
+    MedianFilter.apply(image_data)
 
-        except Exception as ex:
+    GaussianFilter.apply(image_data)
 
-            logger.exception(ex)
+    result = BilateralFilter.apply(image_data)
 
-            raise ImageProcessingError(
-                f"Median filtering failed: {ex}"
-            ) from ex
+    assert result is not None
 
-    @staticmethod
-    def statistics(
-        image_data: ImageData,
-    ) -> dict:
-        
-        # Return median image statistics.
+    assert image_data.bilateral_image is not None
 
-        if image_data.median_image is None:
 
-            raise ImageProcessingError(
-                "Median image not found."
-            )
+# =====================================================
+# Denoiser
+# =====================================================
 
-        return ImageStatistics.basic(
-            image_data.median_image
+def test_denoiser(image_data):
+
+    MedianFilter.apply(image_data)
+
+    GaussianFilter.apply(image_data)
+
+    BilateralFilter.apply(image_data)
+
+    result = Denoiser.apply(image_data)
+
+    assert result is not None
+
+    assert image_data.denoised_image is not None
+
+
+# =====================================================
+# Morphology
+# =====================================================
+
+def test_opening(image_data):
+
+    MedianFilter.apply(image_data)
+
+    GaussianFilter.apply(image_data)
+
+    BilateralFilter.apply(image_data)
+
+    Denoiser.apply(image_data)
+
+    result = Morphology.opening(image_data)
+
+    assert result is not None
+
+    assert image_data.opened_image is not None
+
+
+def test_closing(image_data):
+
+    MedianFilter.apply(image_data)
+
+    GaussianFilter.apply(image_data)
+
+    BilateralFilter.apply(image_data)
+
+    Denoiser.apply(image_data)
+
+    Morphology.opening(image_data)
+
+    result = Morphology.closing(image_data)
+
+    assert result is not None
+
+    assert image_data.closed_image is not None
+
+
+def test_dilation(image_data):
+
+    MedianFilter.apply(image_data)
+
+    result = Morphology.dilate(image_data)
+
+    assert result is not None
+
+
+def test_erosion(image_data):
+
+    MedianFilter.apply(image_data)
+
+    result = Morphology.erode(image_data)
+
+    assert result is not None
+
+
+def test_gradient(image_data):
+
+    MedianFilter.apply(image_data)
+
+    result = Morphology.gradient(image_data)
+
+    assert result is not None
+
+
+# =====================================================
+# Enhancement Service
+# =====================================================
+
+def test_enhancement_service(image_data):
+
+    result = EnhancementService.process(image_data)
+
+    assert result.median_image is not None
+
+    assert result.gaussian_image is not None
+
+    assert result.bilateral_image is not None
+
+    assert result.denoised_image is not None
+
+    assert result.opened_image is not None
+
+    assert result.closed_image is not None
+
+
+def test_service_preview(image_data):
+
+    EnhancementService.process(image_data)
+
+    preview = EnhancementService.preview(image_data)
+
+    assert isinstance(preview, dict)
+
+    assert "Median" in preview
+
+    assert "Closing" in preview
+
+
+def test_service_statistics(image_data):
+
+    EnhancementService.process(image_data)
+
+    stats = EnhancementService.statistics(image_data)
+
+    assert "Median" in stats
+
+    assert "Gaussian" in stats
+
+    assert "Closing" in stats
+
+
+def test_processing_history(image_data):
+
+    EnhancementService.process(image_data)
+
+    history = EnhancementService.processing_history(image_data)
+
+    assert "Median" in history
+
+    assert "Gaussian" in history
+
+    assert "Bilateral" in history
+
+    assert "Denoised" in history
+
+    assert "Opening" in history
+
+    assert "Closing" in history
+
+
+def test_latest_image(image_data):
+
+    EnhancementService.process(image_data)
+
+    latest = EnhancementService.latest_image(image_data)
+
+    assert latest is not None
+
+
+def test_is_processed(image_data):
+
+    assert EnhancementService.is_processed(image_data) is False
+
+    EnhancementService.process(image_data)
+
+    assert EnhancementService.is_processed(image_data) is True
+
+
+def test_reset(image_data):
+
+    EnhancementService.process(image_data)
+
+    EnhancementService.reset(image_data)
+
+    assert image_data.median_image is None
+
+    assert image_data.gaussian_image is None
+
+    assert image_data.bilateral_image is None
+
+    assert image_data.denoised_image is None
+
+    assert image_data.opened_image is None
+
+    assert image_data.closed_image is None
+
+
+# =====================================================
+# Error Handling
+# =====================================================
+
+def test_none_image():
+
+    with pytest.raises(ImageProcessingError):
+
+        MedianFilter.apply(None)
+
+
+def test_invalid_image():
+
+    with pytest.raises(Exception):
+
+        ImageService.load_image(
+            "invalid/image.jpg"
         )
 
-    @staticmethod
-    def compare(
-        image_data: ImageData,
-    ) -> dict:
-        
-        # Compare before and after filtering.
 
-        if image_data.median_image is None:
+# =====================================================
+# Multiple Processing
+# =====================================================
 
-            raise ImageProcessingError(
-                "Median image missing."
-            )
+def test_multiple_processing(image_data):
 
-        if image_data.clahe_image is not None:
+    for _ in range(3):
 
-            original = image_data.clahe_image
+        EnhancementService.process(image_data)
 
-        elif image_data.equalized_image is not None:
+    assert image_data.closed_image is not None
 
-            original = image_data.equalized_image
 
-        else:
+# =====================================================
+# Filter Comparison
+# =====================================================
 
-            original = image_data.grayscale_image
+def test_filter_sequence(image_data):
 
-        return ImageStatistics.compare(
-            original,
-            image_data.median_image,
-        )
+    MedianFilter.apply(image_data)
 
-    @staticmethod
-    def preview(
-        image_data: ImageData,
-    ) -> np.ndarray:
-        
-        # Return preview image.
+    GaussianFilter.apply(image_data)
 
-        if image_data.median_image is None:
+    BilateralFilter.apply(image_data)
 
-            return MedianFilter.apply(
-                image_data
-            )
+    Denoiser.apply(image_data)
 
-        return image_data.median_image.copy()
+    Morphology.opening(image_data)
 
-    @staticmethod
-    def reset(
-        image_data: ImageData,
-    ) -> None:
-        
-        # Remove median filter result.
+    Morphology.closing(image_data)
 
-        image_data.median_image = None
-
-        image_data.processing_history.pop(
-            "Median",
-            None,
-        )
-
-        logger.info(
-            "Median filter reset."
-        )
+    assert image_data.closed_image.shape == image_data.image.shape[:2]
