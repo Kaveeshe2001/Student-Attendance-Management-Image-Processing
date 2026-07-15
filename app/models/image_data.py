@@ -25,6 +25,14 @@ class ImageData:
 
     grayscale_image: Optional[np.ndarray] = None
 
+    brightness_image: Optional[np.ndarray] = None
+
+    contrast_image: Optional[np.ndarray] = None
+
+    equalized_image: Optional[np.ndarray] = None
+
+    clahe_image: Optional[np.ndarray] = None
+
     blurred_image: Optional[np.ndarray] = None
 
     threshold_image: Optional[np.ndarray] = None
