@@ -1,11 +1,6 @@
 from pathlib import Path
 import cv2
-
-
-class ImageValidationError(Exception):
-    # Custom exception for image validation errors.
-    
-    pass
+from app.utils.exceptions import ImageValidationError
 
 
 class ImageValidator:
