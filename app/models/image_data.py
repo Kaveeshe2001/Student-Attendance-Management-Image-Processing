@@ -61,6 +61,12 @@ class ImageData:
 
     processing_stage: str = "Original"
 
+    processing_history: dict[str, object] = field(default_factory=dict)
+
+    document_contour: Optional[np.ndarray] = None
+
+    ordered_corners: Optional[np.ndarray] = None
+
     detected_signatures: int = 0
 
     detected_rows: int = 0
