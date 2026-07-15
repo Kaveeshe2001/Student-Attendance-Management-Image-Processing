@@ -62,6 +62,8 @@ class ImageData:
     processing_stage: str = "Original"
 
     processing_history: dict[str, object] = field(default_factory=dict)
+    
+    processed_images: dict[str, np.ndarray] = field(default_factory=dict)
 
     document_contour: Optional[np.ndarray] = None
 
