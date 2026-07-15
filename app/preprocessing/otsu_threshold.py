@@ -32,6 +32,9 @@ class OtsuThreshold:
                 image_data
             )
 
+            if len(source.shape) == 3:
+                source = cv2.cvtColor(source, cv2.COLOR_BGR2GRAY)
+
             threshold_type = (
                 cv2.THRESH_BINARY |
                 cv2.THRESH_OTSU

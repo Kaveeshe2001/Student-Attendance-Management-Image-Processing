@@ -23,7 +23,7 @@ class ThresholdValidator:
 
         unique = np.unique(image)
 
-        return np.all(np.isin(unique, [0, 255]))
+        return bool(np.all(np.isin(unique, [0, 255])))
 
     @staticmethod
     def foreground_ratio(

@@ -49,6 +49,16 @@ class ImageData:
 
     threshold_image: Optional[np.ndarray] = None
 
+    global_threshold_image: Optional[np.ndarray] = None
+
+    otsu_image: Optional[np.ndarray] = None
+
+    adaptive_mean_image: Optional[np.ndarray] = None
+
+    adaptive_gaussian_image: Optional[np.ndarray] = None
+
+    otsu_threshold_value: Optional[float] = None
+
     binary_image: Optional[np.ndarray] = None
 
     table_image: Optional[np.ndarray] = None

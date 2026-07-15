@@ -38,6 +38,11 @@ class BinaryRefiner:
                 image_data
             )
 
+            if len(source.shape) == 3:
+                source = cv2.cvtColor(source, cv2.COLOR_BGR2GRAY)
+
+            _, source = cv2.threshold(source, 127, 255, cv2.THRESH_BINARY)
+
             kernel = BinaryRefiner._kernel(
                 kernel_size
             )

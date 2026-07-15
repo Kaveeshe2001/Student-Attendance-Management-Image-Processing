@@ -34,6 +34,9 @@ class AdaptiveThreshold:
 
             source = ImageSelector.get_latest(image_data)
 
+            if len(source.shape) == 3:
+                source = cv2.cvtColor(source, cv2.COLOR_BGR2GRAY)
+
             if block_size % 2 == 0:
                 block_size += 1
 
@@ -86,6 +89,9 @@ class AdaptiveThreshold:
             )
 
             source = ImageSelector.get_latest(image_data)
+
+            if len(source.shape) == 3:
+                source = cv2.cvtColor(source, cv2.COLOR_BGR2GRAY)
 
             if block_size % 2 == 0:
                 block_size += 1
