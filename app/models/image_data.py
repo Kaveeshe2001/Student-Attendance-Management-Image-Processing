@@ -89,6 +89,14 @@ class ImageData:
 
     table_cells: Optional[list[dict]] = None
 
+    cells: Optional[list[dict]] = None
+
+    cropped_cells: Optional[list[np.ndarray]] = None
+
+    valid_cells: Optional[list[dict]] = None
+
+    cell_statistics: Optional[dict] = None
+
     # ==========================
     # Image Metadata
     # ==========================

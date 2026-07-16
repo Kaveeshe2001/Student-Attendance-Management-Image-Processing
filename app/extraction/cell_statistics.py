@@ -57,55 +57,58 @@ class CellStatistics:
 
             columns.add(cell["column"])
 
-        stats = {
-
-            "Total Cells": len(image_data.valid_cells),
-
-            "Rows": len(rows),
-
-            "Columns": len(columns),
-
-            "Average Width": round(
-                statistics.mean(widths), 2
-            ),
-
-            "Average Height": round(
-                statistics.mean(heights), 2
-            ),
-
-            "Average Area": round(
-                statistics.mean(areas), 2
-            ),
-
-            "Minimum Area": min(areas),
-
-            "Maximum Area": max(areas),
-
-            "Median Width": round(
-                statistics.median(widths), 2
-            ),
-
-            "Median Height": round(
-                statistics.median(heights), 2
-            ),
-
-            "Median Area": round(
-                statistics.median(areas), 2
-            ),
-
-            "Width Std Dev": round(
-                statistics.pstdev(widths), 2
-            ),
-
-            "Height Std Dev": round(
-                statistics.pstdev(heights), 2
-            ),
-
-            "Area Std Dev": round(
-                statistics.pstdev(areas), 2
-            ),
-
-        }
+        if not widths:
+            stats = {
+                "Total Cells": 0,
+                "Rows": 0,
+                "Columns": 0,
+                "Average Width": 0,
+                "Average Height": 0,
+                "Average Area": 0,
+                "Minimum Area": 0,
+                "Maximum Area": 0,
+                "Median Width": 0,
+                "Median Height": 0,
+                "Median Area": 0,
+                "Width Std Dev": 0,
+                "Height Std Dev": 0,
+                "Area Std Dev": 0,
+            }
+        else:
+            stats = {
+                "Total Cells": len(image_data.valid_cells),
+                "Rows": len(rows),
+                "Columns": len(columns),
+                "Average Width": round(
+                    statistics.mean(widths), 2
+                ),
+                "Average Height": round(
+                    statistics.mean(heights), 2
+                ),
+                "Average Area": round(
+                    statistics.mean(areas), 2
+                ),
+                "Minimum Area": min(areas),
+                "Maximum Area": max(areas),
+                "Median Width": round(
+                    statistics.median(widths), 2
+                ),
+                "Median Height": round(
+                    statistics.median(heights), 2
+                ),
+                "Median Area": round(
+                    statistics.median(areas), 2
+                ),
+                "Width Std Dev": round(
+                    statistics.pstdev(widths), 2
+                ),
+                "Height Std Dev": round(
+                    statistics.pstdev(heights), 2
+                ),
+                "Area Std Dev": round(
+                    statistics.pstdev(areas), 2
+                ),
+            }
 
         image_data.cell_statistics = stats
 

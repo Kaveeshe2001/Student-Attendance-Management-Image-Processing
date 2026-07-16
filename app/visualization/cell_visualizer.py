@@ -22,15 +22,13 @@ class CellVisualizer:
 
         if image_data.valid_cells is None:
 
-            raise ImageProcessingError(
-                "No extracted cells available."
-            )
+            logger.warning("No extracted cells available for display.")
+            return
 
         if index >= len(image_data.valid_cells):
 
-            raise IndexError(
-                "Invalid cell index."
-            )
+            logger.warning("Invalid cell index for display; no cell shown.")
+            return
 
         cell = image_data.valid_cells[index]
 
@@ -66,9 +64,8 @@ class CellVisualizer:
 
         if image_data.valid_cells is None:
 
-            raise ImageProcessingError(
-                "No extracted cells available."
-            )
+            logger.warning("No extracted cells available for grid view.")
+            return
 
         cells = image_data.valid_cells
 
@@ -190,9 +187,8 @@ class CellVisualizer:
 
         if image_data.valid_cells is None:
 
-            raise ImageProcessingError(
-                "No extracted cells available."
-            )
+            logger.warning("No extracted cells available for saving.")
+            return
 
         output_directory = Path(
             output_directory
@@ -239,7 +235,7 @@ class CellVisualizer:
 
         if image_data.valid_cells is None:
 
-            return {}
+            return {"Cells": 0, "Rows": 0, "Columns": 0}
 
         return {
 
