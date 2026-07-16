@@ -22,9 +22,8 @@ class OCRVisualizer:
 
         if image_data.ocr_results is None:
 
-            raise ImageProcessingError(
-                "OCR results unavailable."
-            )
+            logger.warning("OCR results unavailable for display.")
+            return
 
         if (
             index < 0
@@ -32,9 +31,8 @@ class OCRVisualizer:
             index >= len(image_data.ocr_results)
         ):
 
-            raise IndexError(
-                "OCR result index out of range."
-            )
+            logger.warning("OCR result index out of range; no result shown.")
+            return
 
         result = image_data.ocr_results[index]
 
@@ -80,9 +78,8 @@ class OCRVisualizer:
 
         if image_data.ocr_results is None:
 
-            raise ImageProcessingError(
-                "OCR results unavailable."
-            )
+            logger.warning("OCR results unavailable for grid view.")
+            return
 
         results = image_data.ocr_results
 
@@ -152,9 +149,13 @@ class OCRVisualizer:
 
         if image_data.ocr_results is None:
 
-            raise ImageProcessingError(
-                "OCR results unavailable."
-            )
+            logger.warning("OCR results unavailable for comparison view.")
+            return
+
+        if index < 0 or index >= len(image_data.ocr_results):
+
+            logger.warning("OCR result index out of range for comparison.")
+            return
 
         result = image_data.ocr_results[index]
 
@@ -252,9 +253,8 @@ class OCRVisualizer:
 
         if image_data.ocr_results is None:
 
-            raise ImageProcessingError(
-                "OCR results unavailable."
-            )
+            logger.warning("OCR results unavailable for saving.")
+            return
 
         output_directory = Path(
             output_directory

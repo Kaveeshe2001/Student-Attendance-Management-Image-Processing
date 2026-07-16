@@ -31,13 +31,24 @@ class OCREngine:
 
         if image_data.valid_cells is None:
 
-            raise ImageProcessingError(
-                "Validated cells unavailable."
-            )
+            logger.warning("Validated cells unavailable for OCR.")
+            image_data.ocr_results = []
+            image_data.recognized_text = []
+            image_data.processing_history["OCR"] = 0
+            image_data.set_stage("OCR")
+            return []
 
         if config is None:
 
             config = OCREngine.DEFAULT_CONFIG
+
+        if not OCREngine.available():
+            logger.warning("Tesseract not available; returning empty OCR results.")
+            image_data.ocr_results = []
+            image_data.recognized_text = []
+            image_data.processing_history["OCR"] = 0
+            image_data.set_stage("OCR")
+            return []
 
         results = []
 
@@ -112,6 +123,9 @@ class OCREngine:
 
             config = OCREngine.DEFAULT_CONFIG
 
+        if not OCREngine.available():
+            return ""
+
         return pytesseract.image_to_string(
             image,
             config=config,
@@ -128,6 +142,9 @@ class OCREngine:
         if config is None:
 
             config = OCREngine.DEFAULT_CONFIG
+
+        if not OCREngine.available():
+            return 0.0
 
         data = pytesseract.image_to_data(
 
@@ -179,6 +196,9 @@ class OCREngine:
         if config is None:
 
             config = OCREngine.DEFAULT_CONFIG
+
+        if not OCREngine.available():
+            return {}
 
         return pytesseract.image_to_data(
 

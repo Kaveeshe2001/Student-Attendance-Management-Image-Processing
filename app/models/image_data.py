@@ -97,6 +97,12 @@ class ImageData:
 
     cell_statistics: Optional[dict] = None
 
+    ocr_results: Optional[list[dict]] = None
+
+    recognized_text: Optional[list[str]] = None
+
+    ocr_statistics: Optional[dict] = None
+
     # ==========================
     # Image Metadata
     # ==========================

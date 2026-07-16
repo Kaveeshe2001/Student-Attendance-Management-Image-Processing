@@ -65,44 +65,41 @@ class ConfidenceAnalyzer:
 
                 low += 1
 
-        summary = {
-
-            "Average Confidence":
-
-                round(
-                    statistics.mean(
-                        confidences
+        if not confidences:
+            summary = {
+                "Average Confidence": 0.0,
+                "Minimum Confidence": 0.0,
+                "Maximum Confidence": 0.0,
+                "High Confidence": 0,
+                "Medium Confidence": 0,
+                "Low Confidence": 0,
+            }
+        else:
+            summary = {
+                "Average Confidence":
+                    round(
+                        statistics.mean(
+                            confidences
+                        ),
+                        2,
                     ),
-                    2,
-                ),
-
-            "Minimum Confidence":
-
-                round(
-                    min(confidences),
-                    2,
-                ),
-
-            "Maximum Confidence":
-
-                round(
-                    max(confidences),
-                    2,
-                ),
-
-            "High Confidence":
-
-                high,
-
-            "Medium Confidence":
-
-                medium,
-
-            "Low Confidence":
-
-                low,
-
-        }
+                "Minimum Confidence":
+                    round(
+                        min(confidences),
+                        2,
+                    ),
+                "Maximum Confidence":
+                    round(
+                        max(confidences),
+                        2,
+                    ),
+                "High Confidence":
+                    high,
+                "Medium Confidence":
+                    medium,
+                "Low Confidence":
+                    low,
+            }
 
         image_data.ocr_statistics = summary
 
