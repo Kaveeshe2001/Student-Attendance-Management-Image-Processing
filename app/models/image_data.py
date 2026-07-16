@@ -67,6 +67,28 @@ class ImageData:
 
     visualization_image: Optional[np.ndarray] = None
 
+    horizontal_lines: Optional[np.ndarray] = None
+
+    vertical_lines: Optional[np.ndarray] = None
+
+    merged_lines: Optional[np.ndarray] = None
+
+    intersections: Optional[list[tuple[int, int]]] = None
+
+    grid_rows: Optional[list[list[tuple[int, int]]]] = None
+
+    grid_columns: Optional[list[list[tuple[int, int]]]] = None
+
+    grid_image: Optional[np.ndarray] = None
+
+    table_contour: Optional[np.ndarray] = None
+
+    table_bbox: Optional[tuple[int, int, int, int]] = None
+
+    table_mask: Optional[np.ndarray] = None
+
+    table_cells: Optional[list[dict]] = None
+
     # ==========================
     # Image Metadata
     # ==========================
