@@ -104,6 +104,18 @@ class ImageData:
     ocr_statistics: Optional[dict] = None
 
     # ==========================
+    # Matching Results
+    # ==========================
+
+    matched_students: Optional[list[dict]] = None
+
+    unmatched_results: Optional[list[dict]] = None
+
+    invalid_matches: Optional[list[dict]] = None
+
+    matching_statistics: Optional[dict] = None
+
+    # ==========================
     # Image Metadata
     # ==========================
 

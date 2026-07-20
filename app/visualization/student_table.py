@@ -20,13 +20,13 @@ class StudentTable:
         
         # Print matched students.
 
-        matches = image_data.matched_students
+        matches = image_data.matched_students or []
 
         if not matches:
 
-            raise ImageProcessingError(
-                "No matched students available."
-            )
+            print()
+            print("No matched students available.")
+            return
 
         print()
 
@@ -74,13 +74,12 @@ class StudentTable:
         
         # Export matched students to CSV.
 
-        matches = image_data.matched_students
+        matches = image_data.matched_students or []
 
         if not matches:
 
-            raise ImageProcessingError(
-                "No matched students available."
-            )
+            logger.info("No matched students available to export.")
+            return
 
         output_file = Path(
             output_file

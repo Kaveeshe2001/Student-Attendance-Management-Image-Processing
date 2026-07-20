@@ -19,13 +19,12 @@ class MatchingVisualizer:
         
         # Display a single matched student.
 
-        matches = image_data.matched_students
+        matches = image_data.matched_students or []
 
         if not matches:
 
-            raise ImageProcessingError(
-                "No matching results available."
-            )
+            print("No matching results available.")
+            return
 
         if index < 0 or index >= len(matches):
 
@@ -95,13 +94,12 @@ class MatchingVisualizer:
         
         # Print all matched students.
 
-        matches = image_data.matched_students
+        matches = image_data.matched_students or []
 
         if not matches:
 
-            raise ImageProcessingError(
-                "No matching results available."
-            )
+            print("No matching results available.")
+            return
 
         print()
 
@@ -136,13 +134,12 @@ class MatchingVisualizer:
         
         # Print matches requiring manual review.
 
-        matches = image_data.matched_students
+        matches = image_data.matched_students or []
 
         if not matches:
 
-            raise ImageProcessingError(
-                "No matching results available."
-            )
+            print("No matching results available.")
+            return
 
         review = [
 

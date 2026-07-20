@@ -51,7 +51,7 @@ def load_student_records() -> list[dict]:
 def main():
 
     image_path = Path(
-        "resources/sample_attendance_sheet.jpg"
+        "data/images/1.jpeg"
     )
 
     print("\nLoading image...")
