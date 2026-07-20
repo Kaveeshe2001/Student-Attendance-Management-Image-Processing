@@ -20,13 +20,12 @@ class AttendanceVisualizer:
         
         # Display all attendance records.
 
-        results = image_data.attendance_results
+        results = image_data.attendance_results or []
 
         if not results:
 
-            raise ImageProcessingError(
-                "No attendance results available."
-            )
+            print("No attendance results available.")
+            return
 
         print()
 
@@ -259,9 +258,8 @@ class AttendanceVisualizer:
 
         if not results:
 
-            raise ImageProcessingError(
-                "No attendance results."
-            )
+            print("No attendance results available.")
+            return
 
         if (
 

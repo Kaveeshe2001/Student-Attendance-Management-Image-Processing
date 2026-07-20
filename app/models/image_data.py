@@ -155,6 +155,16 @@ class ImageData:
 
     attendance_date: str = ""
 
+    attendance_results: Optional[list[dict]] = None
+
+    present_students: Optional[list[dict]] = None
+
+    absent_students: Optional[list[dict]] = None
+
+    invalid_attendance: Optional[list[dict]] = None
+
+    attendance_statistics: Optional[dict] = None
+
     # ==========================
     # Properties
     # ==========================

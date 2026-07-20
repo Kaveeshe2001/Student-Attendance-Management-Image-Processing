@@ -31,12 +31,6 @@ class AttendanceExporter:
             or []
         )
 
-        if not results:
-
-            raise ImageProcessingError(
-                "No attendance results available."
-            )
-
         output_file = Path(
             output_file
         )
@@ -45,6 +39,37 @@ class AttendanceExporter:
             parents=True,
             exist_ok=True,
         )
+
+        if not results:
+
+            logger.info(
+                "No attendance results available; creating empty export file."
+            )
+
+            with open(
+                output_file,
+                "w",
+                newline="",
+                encoding="utf-8",
+            ) as file:
+
+                writer = csv.writer(file)
+
+                writer.writerow(
+                    [
+                        "Student ID",
+                        "Student Name",
+                        "Status",
+                        "Signature Detected",
+                        "Confidence",
+                        "Ink Ratio",
+                        "Row",
+                        "Column",
+                        "Requires Review",
+                    ]
+                )
+
+            return output_file
 
         with open(
 

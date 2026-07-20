@@ -50,9 +50,8 @@ class AttendanceHeatmap:
 
         if not results:
 
-            raise ImageProcessingError(
-                "No attendance results available."
-            )
+            print("No attendance results available for heatmap.")
+            return
 
         rows = max(
             result.row
