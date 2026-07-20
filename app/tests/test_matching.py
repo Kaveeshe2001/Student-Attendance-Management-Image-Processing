@@ -1,339 +1,205 @@
-from __future__ import annotations
-
-import csv
 from pathlib import Path
 
-from app.models.image_data import ImageData
-from app.matching.match_result import MatchResult
-from app.utils.exceptions import ImageProcessingError
-from app.utils.logger import logger
+from app.preprocessing.image_loader import ImageLoader
+
+from app.services.perspective_service import PerspectiveService
+from app.services.grayscale_service import GrayscaleService
+from app.services.enhancement_service import EnhancementService
+from app.services.threshold_service import ThresholdService
+from app.services.table_service import TableService
+from app.services.extraction_service import ExtractionService
+from app.services.ocr_service import OCRService
+from app.services.matching_service import MatchingService
+
+from app.visualization.matching_visualizer import (
+    MatchingVisualizer,
+)
+from app.visualization.student_table import (
+    StudentTable,
+)
 
 
-class StudentTable:
+def load_student_records() -> list[dict]:
     
-    # Display and export matched students.
+    # Load sample student records.
 
-    @staticmethod
-    def print(
-        image_data: ImageData,
-    ) -> None:
-        
-        # Print matched students.
+    return [
 
-        matches = image_data.matched_students
+        {
+            "student_id": "20210001",
+            "name": "John Silva",
+        },
 
-        if not matches:
+        {
+            "student_id": "20210002",
+            "name": "Kasun Perera",
+        },
 
-            raise ImageProcessingError(
-                "No matched students available."
-            )
+        {
+            "student_id": "20210003",
+            "name": "Nimal Fernando",
+        },
 
-        print()
+        {
+            "student_id": "20210004",
+            "name": "Ashan Peris",
+        },
 
-        print("=" * 130)
+    ]
 
-        print(
-            f"{'Student ID':<15}"
-            f"{'Student Name':<30}"
-            f"{'OCR Text':<25}"
-            f"{'Match Type':<15}"
-            f"{'Score':<10}"
-            f"{'OCR Conf.':<12}"
-            f"{'Review'}"
-        )
 
-        print("=" * 130)
+def main():
 
-        for match in matches:
+    image_path = Path(
+        "resources/sample_attendance_sheet.jpg"
+    )
 
-            print(
+    print("\nLoading image...")
 
-                f"{match.student_id:<15}"
+    image_data = ImageLoader.load(
+        image_path
+    )
 
-                f"{match.student_name:<30}"
+    print("Perspective correction...")
+    PerspectiveService.process(
+        image_data
+    )
 
-                f"{match.cleaned_text:<25}"
+    print("Grayscale conversion...")
+    GrayscaleService.process(
+        image_data
+    )
 
-                f"{match.match_type:<15}"
+    print("Image enhancement...")
+    EnhancementService.process(
+        image_data
+    )
 
-                f"{match.match_score:<10.2f}"
+    print("Thresholding...")
+    ThresholdService.process(
+        image_data
+    )
 
-                f"{match.confidence:<12.2f}"
+    print("Table detection...")
+    TableService.process(
+        image_data
+    )
 
-                f"{'Yes' if match.requires_review else 'No'}"
+    print("Cell extraction...")
+    ExtractionService.process(
+        image_data
+    )
 
-            )
+    print("OCR processing...")
+    OCRService.process(
+        image_data
+    )
 
-        print("=" * 130)
+    print("Loading student records...")
 
-    @staticmethod
-    def export_csv(
-        image_data: ImageData,
-        output_file: str | Path,
-    ) -> None:
-        
-        # Export matched students to CSV.
+    student_records = load_student_records()
 
-        matches = image_data.matched_students
+    print("Running student matching...")
 
-        if not matches:
+    MatchingService.process(
 
-            raise ImageProcessingError(
-                "No matched students available."
-            )
+        image_data,
 
-        output_file = Path(
-            output_file
-        )
+        student_records,
 
-        output_file.parent.mkdir(
-            parents=True,
-            exist_ok=True,
-        )
+    )
 
-        with open(
+    print("\nMatching Statistics")
 
-            output_file,
+    print(
 
-            "w",
-
-            newline="",
-
-            encoding="utf-8",
-
-        ) as file:
-
-            writer = csv.writer(file)
-
-            writer.writerow(
-
-                [
-
-                    "Student ID",
-
-                    "Student Name",
-
-                    "Row",
-
-                    "Column",
-
-                    "OCR Text",
-
-                    "Cleaned Text",
-
-                    "Match Type",
-
-                    "Match Score",
-
-                    "OCR Confidence",
-
-                    "Requires Review",
-
-                ]
-
-            )
-
-            for match in matches:
-
-                writer.writerow(
-
-                    [
-
-                        match.student_id,
-
-                        match.student_name,
-
-                        match.row,
-
-                        match.column,
-
-                        match.ocr_text,
-
-                        match.cleaned_text,
-
-                        match.match_type,
-
-                        match.match_score,
-
-                        match.confidence,
-
-                        match.requires_review,
-
-                    ]
-
-                )
-
-        logger.info(
-            "Student table exported to %s",
-            output_file,
-        )
-
-    @staticmethod
-    def total_students(
-        image_data: ImageData,
-    ) -> int:
-        
-        # Return total matched students.
-
-        return len(
-            image_data.matched_students
-            or []
-        )
-
-    @staticmethod
-    def review_students(
-        image_data: ImageData,
-    ) -> list[MatchResult]:
-        
-        # Return students requiring review.
-
-        return [
-
-            match
-
-            for match in (
-                image_data.matched_students
-                or []
-            )
-
-            if match.requires_review
-
-        ]
-
-    @staticmethod
-    def exact_matches(
-        image_data: ImageData,
-    ) -> list[MatchResult]:
-        
-        # Return exact matches.
-
-        return [
-
-            match
-
-            for match in (
-                image_data.matched_students
-                or []
-            )
-
-            if match.is_exact
-
-        ]
-
-    @staticmethod
-    def fuzzy_matches(
-        image_data: ImageData,
-    ) -> list[MatchResult]:
-        
-        # Return fuzzy matches.
-
-        return [
-
-            match
-
-            for match in (
-                image_data.matched_students
-                or []
-            )
-
-            if match.is_fuzzy
-
-        ]
-
-    @staticmethod
-    def partial_matches(
-        image_data: ImageData,
-    ) -> list[MatchResult]:
-        
-        # Return partial matches.
-
-        return [
-
-            match
-
-            for match in (
-                image_data.matched_students
-                or []
-            )
-
-            if match.is_partial
-
-        ]
-
-    @staticmethod
-    def summary(
-        image_data: ImageData,
-    ) -> dict:
-        
-        # Return table summary.
-
-        return {
-
-            "Total Students":
-
-                StudentTable.total_students(
-                    image_data
-                ),
-
-            "Exact Matches":
-
-                len(
-                    StudentTable.exact_matches(
-                        image_data
-                    )
-                ),
-
-            "Partial Matches":
-
-                len(
-                    StudentTable.partial_matches(
-                        image_data
-                    )
-                ),
-
-            "Fuzzy Matches":
-
-                len(
-                    StudentTable.fuzzy_matches(
-                        image_data
-                    )
-                ),
-
-            "Needs Review":
-
-                len(
-                    StudentTable.review_students(
-                        image_data
-                    )
-                ),
-
-        }
-
-    @staticmethod
-    def print_summary(
-        image_data: ImageData,
-    ) -> None:
-        
-        # Print summary.
-
-        summary = StudentTable.summary(
+        MatchingService.summary(
             image_data
         )
 
-        print()
+    )
 
-        print("=" * 50)
+    print("\nMatched Students")
 
-        print("STUDENT TABLE SUMMARY")
+    StudentTable.print(
+        image_data
+    )
 
-        print("=" * 50)
+    print("\nStudent Table Summary")
 
-        for key, value in summary.items():
+    StudentTable.print_summary(
+        image_data
+    )
 
-            print(
+    print("\nMatching Summary")
 
-                f"{key:<20}: {value}"
+    MatchingVisualizer.summary(
+        image_data
+    )
 
-            )
+    print("\nDetailed Matching Statistics")
 
-        print("=" * 50)
+    MatchingVisualizer.statistics(
+        image_data
+    )
+
+    print("\nMatched Student List")
+
+    MatchingVisualizer.list_matches(
+        image_data
+    )
+
+    if MatchingService.has_matches(
+        image_data
+    ):
+
+        print(
+            "\nDisplaying first match..."
+        )
+
+        MatchingVisualizer.show(
+
+            image_data,
+
+            0,
+
+        )
+
+    output_directory = Path(
+        "results/matching"
+    )
+
+    output_directory.mkdir(
+
+        parents=True,
+
+        exist_ok=True,
+
+    )
+
+    StudentTable.export_csv(
+
+        image_data,
+
+        output_directory /
+
+        "matched_students.csv",
+
+    )
+
+    print(
+
+        "\nMatching results exported."
+
+    )
+
+    print(
+
+        "\nPhase 10 completed successfully."
+
+    )
+
+
+if __name__ == "__main__":
+
+    main()
