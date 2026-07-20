@@ -80,20 +80,20 @@ class SAMS:
             self.image_data
         )
 
-        MatchingService.process(
-            self.image_data
-        )
-
-        AttendanceService.process(
-            self.image_data
-        )
-
         XMLService.process(
 
             self.image_data,
 
             self.xml_path,
 
+        )
+
+        MatchingService.process(
+            self.image_data
+        )
+
+        AttendanceService.process(
+            self.image_data
         )
 
         logger.info(

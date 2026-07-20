@@ -104,6 +104,18 @@ class ImageData:
     ocr_statistics: Optional[dict] = None
 
     # ==========================
+    # XML / Student Records
+    # ==========================
+
+    student_records: Optional[list[dict]] = None
+
+    merged_records: Optional[list[dict]] = None
+
+    invalid_xml_records: Optional[list[dict]] = None
+
+    xml_statistics: Optional[dict] = None
+
+    # ==========================
     # Matching Results
     # ==========================
 

@@ -28,7 +28,7 @@ class MatchingService:
     @staticmethod
     def process(
         image_data: ImageData,
-        student_records: list[dict],
+        student_records: list[dict] | None = None,
         fuzzy_threshold: float = 80.0,
     ) -> list[MatchResult]:
         
@@ -38,11 +38,18 @@ class MatchingService:
             "Starting student matching pipeline..."
         )
 
+        record_source = (
+            student_records
+            if student_records is not None
+            else image_data.student_records
+            or []
+        )
+
         raw_matches = StudentMatcher.match(
 
             image_data,
 
-            student_records,
+            record_source,
 
             fuzzy_threshold,
 
