@@ -219,7 +219,8 @@ class GridGenerator:
                 "Grid has not been generated."
             )
 
-        height, width = image_data.image.shape[:2]
+        image = image_data.perspective_image if image_data.perspective_image is not None else image_data.image
+        height, width = image.shape[:2]
 
         grid = np.zeros(
             (height, width),
@@ -446,7 +447,8 @@ class GridGenerator:
                 "Grid has not been generated."
             )
 
-        overlay = image_data.image.copy()
+        image = image_data.perspective_image if image_data.perspective_image is not None else image_data.image
+        overlay = image.copy()
 
         # Draw horizontal grid lines
         for row in image_data.grid_rows:

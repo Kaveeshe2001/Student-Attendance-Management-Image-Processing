@@ -69,13 +69,13 @@ class Investigator:
 
         print(
             "Grayscale   :",
-            image_data.gray_image
+            image_data.grayscale_image
             is not None
         )
 
         print(
             "Enhanced    :",
-            image_data.enhanced_image
+            image_data.closed_image
             is not None
         )
 
@@ -96,18 +96,12 @@ class Investigator:
 
         print(
             "Tables Found :",
-            len(
-                image_data.tables
-                or []
-            )
+            1 if image_data.table_contour is not None else 0
         )
 
         print(
             "Grid Lines   :",
-            len(
-                image_data.grid_lines
-                or []
-            )
+            len(image_data.grid_rows or []) + len(image_data.grid_columns or [])
         )
 
     @staticmethod

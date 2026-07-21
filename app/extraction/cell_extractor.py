@@ -42,7 +42,7 @@ class CellExtractor:
 
         extracted_cells = []
 
-        image = image_data.image
+        image = image_data.perspective_image if image_data.perspective_image is not None else image_data.image
 
         for index, cell in enumerate(
             image_data.table_cells,

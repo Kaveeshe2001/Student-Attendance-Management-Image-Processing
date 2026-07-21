@@ -121,7 +121,8 @@ class TableDetector:
 
         x, y, w, h = image_data.table_bbox
 
-        return image_data.image[
+        image = image_data.perspective_image if image_data.perspective_image is not None else image_data.image
+        return image[
             y:y+h,
             x:x+w,
         ]
@@ -139,7 +140,8 @@ class TableDetector:
                 "Table contour not found."
             )
 
-        overlay = image_data.image.copy()
+        image = image_data.perspective_image if image_data.perspective_image is not None else image_data.image
+        overlay = image.copy()
 
         cv2.drawContours(
             overlay,
@@ -164,7 +166,8 @@ class TableDetector:
                 "Bounding box unavailable."
             )
 
-        overlay = image_data.image.copy()
+        image = image_data.perspective_image if image_data.perspective_image is not None else image_data.image
+        overlay = image.copy()
 
         x,y,w,h = image_data.table_bbox
 

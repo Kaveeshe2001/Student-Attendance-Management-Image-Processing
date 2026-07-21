@@ -51,7 +51,8 @@ class GridVisualizer:
                 "Intersections unavailable."
             )
 
-        image = image_data.image.copy()
+        image = image_data.perspective_image if image_data.perspective_image is not None else image_data.image
+        image = image.copy()
 
         for x, y in image_data.intersections:
 
@@ -84,7 +85,8 @@ class GridVisualizer:
                 "Cells unavailable."
             )
 
-        image = image_data.image.copy()
+        image = image_data.perspective_image if image_data.perspective_image is not None else image_data.image
+        image = image.copy()
 
         for cell in image_data.table_cells:
 
@@ -119,7 +121,8 @@ class GridVisualizer:
                 "Cells unavailable."
             )
 
-        image = image_data.image.copy()
+        image = image_data.perspective_image if image_data.perspective_image is not None else image_data.image
+        image = image.copy()
 
         for index, cell in enumerate(
             image_data.table_cells,
@@ -169,7 +172,7 @@ class GridVisualizer:
         images = [
 
             (
-                image_data.image,
+                image_data.perspective_image if image_data.perspective_image is not None else image_data.image,
                 "Original",
             ),
 
@@ -382,6 +385,17 @@ class GridVisualizer:
                 ),
 
         }
+
+    @staticmethod
+    def summary(
+        image_data: ImageData,
+    ) -> None:
+        
+        # Print grid summary.
+
+        info = GridVisualizer.information(image_data)
+        for key, value in info.items():
+            print(f"{key:<25}: {value}")
 
     @staticmethod
     def show(

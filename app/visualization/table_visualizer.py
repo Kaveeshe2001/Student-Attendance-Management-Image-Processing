@@ -300,3 +300,14 @@ class TableVisualizer:
         )
 
         return stats
+
+    @staticmethod
+    def summary(
+        image_data: ImageData,
+    ) -> None:
+        
+        # Print table summary.
+
+        info = TableVisualizer.information(image_data)
+        for key, value in info.items():
+            print(f"{key:<25}: {value}")

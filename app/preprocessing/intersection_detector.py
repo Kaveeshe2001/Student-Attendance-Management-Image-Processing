@@ -125,7 +125,8 @@ class IntersectionDetector:
                 "No intersections detected."
             )
 
-        overlay = image_data.image.copy()
+        image = image_data.perspective_image if image_data.perspective_image is not None else image_data.image
+        overlay = image.copy()
 
         for x, y in image_data.intersections:
 

@@ -34,7 +34,7 @@ class CellCropper:
                 "Cells have not been extracted."
             )
 
-        image = image_data.image
+        image = image_data.perspective_image if image_data.perspective_image is not None else image_data.image
 
         height, width = image.shape[:2]
 

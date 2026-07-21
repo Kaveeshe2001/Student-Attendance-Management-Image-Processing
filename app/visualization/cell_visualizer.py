@@ -121,7 +121,8 @@ class CellVisualizer:
 
         cell = image_data.cells[index]
 
-        original = image_data.image.copy()
+        original = image_data.perspective_image if image_data.perspective_image is not None else image_data.image
+        original = original.copy()
 
         x, y, w, h = cell["bbox"]
 
@@ -263,3 +264,14 @@ class CellVisualizer:
                 }),
 
         }
+
+    @staticmethod
+    def summary(
+        image_data: ImageData,
+    ) -> None:
+        
+        # Print cells summary.
+
+        info = CellVisualizer.information(image_data)
+        for key, value in info.items():
+            print(f"{key:<25}: {value}")

@@ -25,7 +25,8 @@ class ExtractionVisualizer:
                 "No extracted cells available."
             )
 
-        image = image_data.image.copy()
+        image = image_data.perspective_image if image_data.perspective_image is not None else image_data.image
+        image = image.copy()
 
         for cell in image_data.valid_cells:
 
@@ -73,7 +74,8 @@ class ExtractionVisualizer:
                 "No extracted cells available."
             )
 
-        image = image_data.image.copy()
+        image = image_data.perspective_image if image_data.perspective_image is not None else image_data.image
+        image = image.copy()
 
         for cell in image_data.valid_cells:
 
@@ -155,7 +157,8 @@ class ExtractionVisualizer:
             exist_ok=True,
         )
 
-        image = image_data.image.copy()
+        image = image_data.perspective_image if image_data.perspective_image is not None else image_data.image
+        image = image.copy()
 
         for cell in image_data.valid_cells:
 
