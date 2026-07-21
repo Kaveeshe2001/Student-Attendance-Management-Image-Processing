@@ -78,22 +78,45 @@ export default function Dashboard({ imageFile, setImageFile, xmlFile, setXmlFile
       // 1. Upload & Process via API
       setLogs(prev => [...prev, "[INFO] Connecting to python backend REST APIs..."]);
       
-      const uploadRes = await axios.post('/api/upload-image', formData, {
+      const uploadRes = await axios.post('/api/process', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      // Stream pipeline steps (simulated timings)
-      for (let i = 0; i < 13; i++) {
-        setActiveStep(i);
-        setStatusText(`Running pipeline stage: ${i+1}/13`);
-        await new Promise(resolve => setTimeout(resolve, 300));
-      }
+      const session = uploadRes.data;
+      if (session && session.id) {
+        const session_id = session.id;
+        
+        // Fetch results, logs, and stats in parallel from SQLite REST endpoints
+        const [resultsRes, logsRes, statsRes] = await Promise.all([
+          axios.get(`/api/results/${session_id}`),
+          axios.get(`/api/logs/${session_id}`),
+          axios.get(`/api/statistics/${session_id}`)
+        ]);
 
-      // If backend returns data
-      if (uploadRes.data && uploadRes.data.results) {
-        setResults(uploadRes.data.results);
-        setLogs(uploadRes.data.logs || []);
-        setAnalytics(uploadRes.data.analytics || {});
+        setResults(resultsRes.data.map(r => ({
+          student_id: r.student_id,
+          student_name: r.student_name,
+          status: r.attendance,
+          signature_detected: r.signature_detected,
+          confidence: r.confidence,
+          ink_ratio: r.ink_ratio,
+          requires_review: r.review_required
+        })));
+        
+        const formattedLogs = logsRes.data.map(l => `[${l.level}] [${l.stage}] ${l.message}`);
+        setLogs(formattedLogs);
+        
+        setAnalytics({
+          total: session.present_students + session.absent_students + session.manual_review,
+          present: session.present_students,
+          absent: session.absent_students,
+          review: session.manual_review,
+          signatures: statsRes.data.signatures,
+          time: `${session.processing_time}s`
+        });
+
+        setActiveStep(12);
+        setStatusText("Completed");
         setProcessing(false);
         setToastMsg("Document analyzed successfully via REST API!");
         setShowToast(true);
