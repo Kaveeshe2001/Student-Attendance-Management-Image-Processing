@@ -16,6 +16,7 @@ import About from './pages/About';
 
 export default function App() {
   const [mode, setMode] = useState('light');
+  const [sessionId, setSessionId] = useState(null);
   const [imageFile, setImageFile] = useState(null);
   const [xmlFile, setXmlFile] = useState(null);
   const [results, setResults] = useState([]);
@@ -49,6 +50,7 @@ export default function App() {
                 text: {
                   primary: '#1e293b',
                   secondary: '#64748b',
+                  details: '#334155'
                 },
                 divider: '#e2e8f0',
               }
@@ -60,6 +62,7 @@ export default function App() {
                 text: {
                   primary: '#f1f5f9',
                   secondary: '#94a3b8',
+                  details: '#cbd5e1'
                 },
                 divider: '#1e293b',
               }),
@@ -107,25 +110,28 @@ export default function App() {
                       setResults={setResults}
                       logs={logs} 
                       setLogs={setLogs}
+                      analytics={analytics}
                       setAnalytics={setAnalytics}
+                      sessionId={sessionId}
+                      setSessionId={setSessionId}
                     />
                   } 
                 />
                 <Route 
                   path="/analysis" 
-                  element={<Analysis results={results} imageFile={imageFile} />} 
+                  element={<Analysis results={results} imageFile={imageFile} sessionId={sessionId} />} 
                 />
                 <Route 
                   path="/visualization" 
-                  element={<Visualization imageFile={imageFile} />} 
+                  element={<Visualization imageFile={imageFile} sessionId={sessionId} />} 
                 />
                 <Route 
                   path="/statistics" 
-                  element={<Statistics results={results} imageFile={imageFile} />} 
+                  element={<Statistics results={results} imageFile={imageFile} sessionId={sessionId} />} 
                 />
                 <Route 
                   path="/results" 
-                  element={<Results results={results} imageFile={imageFile} />} 
+                  element={<Results results={results} imageFile={imageFile} sessionId={sessionId} />} 
                 />
                 <Route 
                   path="/settings" 

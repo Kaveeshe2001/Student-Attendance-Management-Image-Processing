@@ -25,10 +25,10 @@ import {
 
 const menuItems = [
   { text: 'Dashboard', path: '/', icon: <DashboardIcon /> },
-  { text: 'Analysis', path: '/analysis', icon: <AnalyticsIcon /> },
+  { text: 'Process Attendance', path: '/', icon: <AnalyticsIcon /> },
   { text: 'Visualization', path: '/visualization', icon: <VisibilityIcon /> },
-  { text: 'Statistics', path: '/statistics', icon: <BarChartIcon /> },
   { text: 'Results', path: '/results', icon: <ResultsIcon /> },
+  { text: 'Statistics', path: '/statistics', icon: <BarChartIcon /> },
   { text: 'Settings', path: '/settings', icon: <SettingsIcon /> },
   { text: 'About', path: '/about', icon: <InfoIcon /> }
 ];

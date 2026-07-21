@@ -3,9 +3,35 @@ import { Box, Typography, Button, Paper } from '@mui/material';
 import ResultTable from '../components/ResultTable';
 import { GetApp as DownloadIcon } from '@mui/icons-material';
 
-export default function Results({ results, imageFile }) {
+export default function Results({ results, imageFile, sessionId }) {
   const handleExport = (format) => {
-    alert(`Successfully generated and downloaded report: final_attendance.${format}`);
+    if (format === 'csv') {
+      const headers = ['Student ID', 'Student Name', 'Status', 'Confidence', 'Ink Ratio', 'Requires Review'];
+      const csvRows = results.map(r => [
+        r.student_id,
+        r.student_name,
+        r.status,
+        (r.confidence * 100).toFixed(2) + '%',
+        r.ink_ratio.toFixed(4),
+        r.requires_review ? 'Yes' : 'No'
+      ]);
+      
+      const csvContent = [
+        headers.join(','), 
+        ...csvRows.map(row => row.map(val => `"${val.replace(/"/g, '""')}"`).join(','))
+      ].join('\n');
+      
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `sams_attendance_report_${sessionId || 'export'}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      alert(`Report generated in ${format.toUpperCase()} format.`);
+    }
   };
 
   return (

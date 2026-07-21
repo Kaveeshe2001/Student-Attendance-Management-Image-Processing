@@ -1,7 +1,8 @@
-import React from 'react';
-import { Box, Grid, Typography, Paper } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, Grid, Typography, Paper, CircularProgress } from '@mui/material';
 import ChartCard from '../components/ChartCard';
 import StatisticsCard from '../components/StatisticsCard';
+import axios from 'axios';
 import {
   PieChart,
   Pie,
@@ -11,50 +12,93 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  Legend,
   ResponsiveContainer,
-  LineChart,
-  Line,
   AreaChart,
   Area
 } from 'recharts';
 
 const COLORS = ['#10b981', '#ef4444', '#f59e0b'];
 
-export default function Statistics({ results, imageFile }) {
+export default function Statistics({ results, imageFile, sessionId }) {
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!sessionId) {
+      setStats(null);
+      return;
+    }
+
+    setLoading(true);
+    // Disable browser caching
+    axios.get(`/api/statistics/${sessionId}`, {
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      },
+      params: {
+        t: new Date().getTime()
+      }
+    })
+    .then(res => {
+      setStats(res.data);
+      setLoading(false);
+    })
+    .catch(err => {
+      console.error("Failed to load session statistics:", err);
+      setLoading(false);
+    });
+  }, [sessionId]);
+
   const total = results.length;
   const present = results.filter(r => r.status === 'Present').length;
   const absent = results.filter(r => r.status === 'Absent').length;
   const review = results.filter(r => r.requires_review).length;
 
-  // Pie/Bar Data
+  // Dynamic Pie/Bar Data
   const attendanceData = [
-    { name: 'Present', value: total > 0 ? present : 0 },
-    { name: 'Absent', value: total > 0 ? absent : 0 },
-    { name: 'Manual Review', value: total > 0 ? review : 0 }
+    { name: 'Present', value: present },
+    { name: 'Absent', value: absent },
+    { name: 'Manual Review', value: review }
   ];
 
-  // Pipeline Timings Data (ms)
-  const timingData = [
-    { stage: 'Warp', time: 120 },
-    { stage: 'Gray', time: 10 },
-    { stage: 'Enhance', time: 140 },
-    { stage: 'Threshold', time: 20 },
-    { stage: 'Grid', time: 60 },
-    { stage: 'Cells', time: 20 },
-    { stage: 'OCR', time: 180 },
-    { stage: 'Match', time: 30 },
-    { stage: 'Signature', time: 30 }
-  ];
+  // Dynamic OCR Confidence Distribution
+  const getConfRange = (val) => {
+    const num = val <= 1.0 ? val * 100 : val;
+    if (num >= 0 && num < 20) return '0-20%';
+    if (num >= 20 && num < 40) return '20-40%';
+    if (num >= 40 && num < 60) return '40-60%';
+    if (num >= 60 && num < 80) return '60-80%';
+    return '80-100%';
+  };
 
-  // OCR Confidence Distribution data
   const confidenceData = [
-    { range: '0-20%', count: 0 },
-    { range: '20-40%', count: 0 },
-    { range: '40-60%', count: 0 },
-    { range: '60-80%', count: 1 },
-    { range: '80-100%', count: 5 }
+    { range: '0-20%', count: results.filter(r => getConfRange(r.confidence) === '0-20%').length },
+    { range: '20-40%', count: results.filter(r => getConfRange(r.confidence) === '20-40%').length },
+    { range: '40-60%', count: results.filter(r => getConfRange(r.confidence) === '40-60%').length },
+    { range: '60-80%', count: results.filter(r => getConfRange(r.confidence) === '60-80%').length },
+    { range: '80-100%', count: results.filter(r => getConfRange(r.confidence) === '80-100%').length }
   ];
+
+  // System Pipeline Components Statistics
+  const pipelineMetricsData = stats ? [
+    { name: 'Tables', count: stats.tables_detected },
+    { name: 'Cells', count: stats.cells_detected },
+    { name: 'Valid Cells', count: stats.cells_valid },
+    { name: 'OCR Reads', count: stats.ocr_texts },
+    { name: 'Signatures', count: stats.signatures }
+  ] : [];
+
+  const matchedRate = total > 0 && stats ? ((stats.matched_students / total) * 100).toFixed(1) : "0.0";
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -63,30 +107,30 @@ export default function Statistics({ results, imageFile }) {
           Performance & Analytics Dashboard
         </Typography>
         <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
-          Monitor system metrics, processing speeds, character recognition quality, and validation checks.
+          Monitor system metrics, character recognition quality, and validation checks.
         </Typography>
       </Box>
 
       {/* KPI Cards */}
       <Grid container spacing={2}>
         <Grid item xs={6} sm={4} md={2.4}>
-          <StatisticsCard value={total > 0 ? total : 0} label="Total Students" />
+          <StatisticsCard value={total} label="Total Students" />
         </Grid>
         <Grid item xs={6} sm={4} md={2.4}>
-          <StatisticsCard value={total > 0 ? present : 0} label="Present" borderLeftColor="#10b981" />
+          <StatisticsCard value={present} label="Present" borderLeftColor="#10b981" />
         </Grid>
         <Grid item xs={6} sm={4} md={2.4}>
-          <StatisticsCard value={total > 0 ? absent : 0} label="Absent" borderLeftColor="#ef4444" />
+          <StatisticsCard value={absent} label="Absent" borderLeftColor="#ef4444" />
         </Grid>
         <Grid item xs={6} sm={4} md={2.4}>
-          <StatisticsCard value={total > 0 ? review : 0} label="Manual Review" borderLeftColor="#f59e0b" />
+          <StatisticsCard value={review} label="Manual Review" borderLeftColor="#f59e0b" />
         </Grid>
         <Grid item xs={6} sm={4} md={2.4}>
-          <StatisticsCard value={total > 0 ? "100.0%" : "0.0%"} label="OCR Matching Rate" />
+          <StatisticsCard value={`${matchedRate}%`} label="OCR Matching Rate" />
         </Grid>
       </Grid>
 
-      {!imageFile ? (
+      {!imageFile || !sessionId ? (
         <Paper sx={{ p: 4, textAlign: 'center', color: 'text.secondary', border: '1px solid', borderColor: 'divider', borderRadius: '12px' }}>
           Please upload and process a scanned document from the Dashboard page to populate advanced charts.
         </Paper>
@@ -117,15 +161,15 @@ export default function Statistics({ results, imageFile }) {
             </ChartCard>
           </Grid>
 
-          {/* Chart 2: Pipeline execution times */}
+          {/* Chart 2: Pipeline component statistics */}
           <Grid item xs={12} md={6}>
-            <ChartCard title="Pipeline Execution Time (ms)" subtitle="Breakdown of processing speed for each stage">
+            <ChartCard title="Extraction & CV Yields" subtitle="Volume of elements processed across CV stages">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={timingData}>
-                  <XAxis dataKey="stage" stroke="#8892b0" />
+                <BarChart data={pipelineMetricsData}>
+                  <XAxis dataKey="name" stroke="#8892b0" />
                   <YAxis stroke="#8892b0" />
                   <Tooltip />
-                  <Bar dataKey="time" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </ChartCard>

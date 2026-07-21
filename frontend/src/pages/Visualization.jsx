@@ -1,28 +1,63 @@
-import React, { useState } from 'react';
-import { Box, Tab, Tabs, Typography, Paper } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, Tab, Tabs, Typography, Paper, CircularProgress } from '@mui/material';
 import ImageComparison from '../components/ImageComparison';
 import ImageViewer from '../components/ImageViewer';
+import axios from 'axios';
 
-export default function Visualization({ imageFile }) {
+export default function Visualization({ imageFile, sessionId }) {
   const [activeTab, setActiveTab] = useState(0);
+  const [visuals, setVisuals] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [timeKey, setTimeKey] = useState(new Date().getTime());
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
   };
 
-  const generateMockSrc = (label) => {
-    if (!imageFile) return null;
-    const canvas = document.createElement('canvas');
-    canvas.width = 600;
-    canvas.height = 300;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(0, 0, 600, 300);
-    ctx.fillStyle = '#38bdf8';
-    ctx.font = '20px sans-serif';
-    ctx.fillText(label, 150, 160);
-    return canvas.toDataURL();
+  useEffect(() => {
+    if (!sessionId) {
+      setVisuals(null);
+      return;
+    }
+
+    setLoading(true);
+    // Unique timestamp cache-busting configuration
+    const timestamp = new Date().getTime();
+    setTimeKey(timestamp);
+
+    axios.get(`/api/visualizations/${sessionId}`, {
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      },
+      params: {
+        t: timestamp
+      }
+    })
+    .then(res => {
+      setVisuals(res.data);
+      setLoading(false);
+    })
+    .catch(err => {
+      console.error("Failed to load visual maps:", err);
+      setLoading(false);
+    });
+  }, [sessionId]);
+
+  const getImgUrl = (path) => {
+    if (!path) return null;
+    // Add cache buster query parameter
+    return `${path}?t=${timeKey}`;
   };
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -35,7 +70,7 @@ export default function Visualization({ imageFile }) {
         </Typography>
       </Box>
 
-      {!imageFile ? (
+      {!imageFile || !sessionId || !visuals ? (
         <Paper sx={{ p: 4, textAlign: 'center', color: 'text.secondary', border: '1px solid', borderColor: 'divider', borderRadius: '12px' }}>
           Please upload and process a scanned document from the Dashboard page to unlock visualization maps.
         </Paper>
@@ -47,7 +82,7 @@ export default function Visualization({ imageFile }) {
               <Tab label="Original vs Perspective" />
               <Tab label="Perspective vs Threshold" />
               <Tab label="Threshold vs Grid" />
-              <Tab label="Grid vs Cell Extraction" />
+              <Tab label="Grid vs Cells" />
               <Tab label="OCR Overlay" />
               <Tab label="Signature Detection Overlay" />
               <Tab label="Attendance Overlay" />
@@ -57,8 +92,8 @@ export default function Visualization({ imageFile }) {
           {/* Render Active Visual Comparison */}
           {activeTab === 0 && (
             <ImageComparison
-              beforeSrc={generateMockSrc('Original Raw Scan')}
-              afterSrc={generateMockSrc('Perspective Warp Corrected')}
+              beforeSrc={getImgUrl(visuals.original)}
+              afterSrc={getImgUrl(visuals.perspective)}
               beforeTitle="Raw Scan Page"
               afterTitle="Corrected Document Bounding Area"
             />
@@ -66,8 +101,8 @@ export default function Visualization({ imageFile }) {
 
           {activeTab === 1 && (
             <ImageComparison
-              beforeSrc={generateMockSrc('Warped RGB image')}
-              afterSrc={generateMockSrc('Threshold Binary Image')}
+              beforeSrc={getImgUrl(visuals.perspective)}
+              afterSrc={getImgUrl(visuals.threshold)}
               beforeTitle="Corrected RGB table"
               afterTitle="High Contrast Binary Details"
             />
@@ -75,8 +110,8 @@ export default function Visualization({ imageFile }) {
 
           {activeTab === 2 && (
             <ImageComparison
-              beforeSrc={generateMockSrc('Threshold Binary Image')}
-              afterSrc={generateMockSrc('Isolated Grid Lines')}
+              beforeSrc={getImgUrl(visuals.threshold)}
+              afterSrc={getImgUrl(visuals.grid)}
               beforeTitle="High Contrast Binary"
               afterTitle="Detected Grid Lines"
             />
@@ -84,8 +119,8 @@ export default function Visualization({ imageFile }) {
 
           {activeTab === 3 && (
             <ImageComparison
-              beforeSrc={generateMockSrc('Isolated Grid Lines')}
-              afterSrc={generateMockSrc('Warped image with cells boundary grid overlay')}
+              beforeSrc={getImgUrl(visuals.grid)}
+              afterSrc={getImgUrl(visuals.cells)}
               beforeTitle="Detected Grid Lines"
               afterTitle="Cell Extraction boundary segments overlay"
             />
@@ -96,7 +131,7 @@ export default function Visualization({ imageFile }) {
               title="OCR Overlay"
               algoText="Tesseract OCR + Bounding Box mapping"
               description="Displays detected character texts overlaid directly on top of student index number columns."
-              src={generateMockSrc('Corrected image with OCR Bounding Boxes')}
+              src={getImgUrl(visuals.ocr)}
             />
           )}
 
@@ -105,7 +140,7 @@ export default function Visualization({ imageFile }) {
               title="Signature Detection Bounding Boxes"
               algoText="Signature Bounding Box Crop + Ink Density"
               description="Displays student signature crops side-by-side with computed ink ratios."
-              src={generateMockSrc('Corrected image with Signature Bounding Boxes')}
+              src={getImgUrl(visuals.signature)}
             />
           )}
 
@@ -114,7 +149,7 @@ export default function Visualization({ imageFile }) {
               title="Final Attendance Overlay"
               algoText="Attendance Decision Matrix Overlay"
               description="Visualizes final student attendance statuses (Present/Absent/Review) mapped on the document."
-              src={generateMockSrc('Warped image with Final Attendance badges')}
+              src={getImgUrl(visuals.attendance)}
             />
           )}
         </Box>

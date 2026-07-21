@@ -8,47 +8,13 @@ import ResultTable from '../components/ResultTable';
 import LoadingOverlay from '../components/LoadingOverlay';
 import axios from 'axios';
 
-// Mock student XML records for simulation fallback
-const mockXMLRecords = [
-  { student_id: "10000409", name: "M S Dilshanika Perera" },
-  { student_id: "10009301", name: "C W M A Shehan Abeyrathne" },
-  { student_id: "10009302", name: "B A K M Chithrananda" },
-  { student_id: "10009303", name: "W Shashini Minosha De Silva" },
-  { student_id: "10009304", name: "K L Udara Maduranga Liyanage" },
-  { student_id: "10009306", name: "Hansa Anuradha Wickramanayake" }
-];
-
-// Simulated logs
-const simulationLogs = [
-  "[INFO] Starting SAMS pipeline execution...",
-  "[INFO] Validating image structure: 1.jpeg...",
-  "[INFO] Loading image using OpenCV...",
-  "[INFO] Image Loaded Successfully | 1.jpeg | 3024 x 4032",
-  "[INFO] Perspective Correction: Auto-threshold edge bounds found.",
-  "[INFO] Grayscale conversion completed.",
-  "[INFO] Gaussian blur applied.",
-  "[INFO] Edge detection completed.",
-  "[INFO] Table grid alignment: 7 row lines, 4 column lines detected.",
-  "[INFO] Merging horizontal and vertical lines...",
-  "[INFO] Table grid generated: 28 sub-cells successfully isolated.",
-  "[INFO] Running positional matcher fallbacks (OCR bypassed)...",
-  "[INFO] Matching 6 database records to grid layout positions...",
-  "[INFO] Calculating signature ink ratios...",
-  "[INFO] Student 1: ink_ratio=20.58% | PRESENT",
-  "[INFO] Student 2: ink_ratio=23.94% | PRESENT",
-  "[INFO] Student 3: ink_ratio=14.25% | PRESENT",
-  "[INFO] Student 4: ink_ratio=15.11% | PRESENT",
-  "[INFO] Student 5: ink_ratio=15.18% | PRESENT",
-  "[INFO] Student 6: ink_ratio=13.25% | PRESENT",
-  "[SUCCESS] Attendance Decision: 6/6 students present. Log summary generated."
-];
-
-export default function Dashboard({ imageFile, setImageFile, xmlFile, setXmlFile, results, setResults, logs, setLogs, setAnalytics }) {
+export default function Dashboard({ imageFile, setImageFile, xmlFile, setXmlFile, results, setResults, logs, setLogs, analytics, setAnalytics, sessionId, setSessionId }) {
   const [activeStep, setActiveStep] = useState(-1);
   const [statusText, setStatusText] = useState('');
   const [processing, setProcessing] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
+  const [toastSeverity, setToastSeverity] = useState('success');
 
   const handleImageSelect = (fileData) => {
     setImageFile(fileData);
@@ -66,31 +32,48 @@ export default function Dashboard({ imageFile, setImageFile, xmlFile, setXmlFile
     setProcessing(true);
     setLogs([]);
     setResults([]);
+    setSessionId(null);
     setActiveStep(0);
     setStatusText('Warping image scan...');
 
-    // We will attempt API call first. If it fails, we fall back to local simulation.
     try {
       const formData = new FormData();
       formData.append('image', imageFile.file);
       formData.append('xml', xmlFile.file);
 
-      // 1. Upload & Process via API
+      // Disable browser caching for API requests
       setLogs(prev => [...prev, "[INFO] Connecting to python backend REST APIs..."]);
       
       const uploadRes = await axios.post('/api/process', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { 
+          'Content-Type': 'multipart/form-data',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
       });
 
       const session = uploadRes.data;
       if (session && session.id) {
         const session_id = session.id;
+        setSessionId(session_id);
         
         // Fetch results, logs, and stats in parallel from SQLite REST endpoints
+        const cacheBypassConfig = {
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          },
+          params: {
+            t: new Date().getTime() // Cache-busting timestamp
+          }
+        };
+
         const [resultsRes, logsRes, statsRes] = await Promise.all([
-          axios.get(`/api/results/${session_id}`),
-          axios.get(`/api/logs/${session_id}`),
-          axios.get(`/api/statistics/${session_id}`)
+          axios.get(`/api/results/${session_id}`, cacheBypassConfig),
+          axios.get(`/api/logs/${session_id}`, cacheBypassConfig),
+          axios.get(`/api/statistics/${session_id}`, cacheBypassConfig)
         ]);
 
         setResults(resultsRes.data.map(r => ({
@@ -119,61 +102,21 @@ export default function Dashboard({ imageFile, setImageFile, xmlFile, setXmlFile
         setStatusText("Completed");
         setProcessing(false);
         setToastMsg("Document analyzed successfully via REST API!");
+        setToastSeverity('success');
         setShowToast(true);
-        return;
       }
     } catch (err) {
+      console.error(err);
+      const errMsg = err.response?.data?.detail || err.message || "Unknown error";
       setLogs(prev => [
         ...prev,
-        "[WARNING] Python REST API server not found at port 8000. Running fast local CV emulator fallback..."
+        `[ERROR] Connection failed: ${errMsg}`
       ]);
+      setProcessing(false);
+      setToastMsg(`SAMS execution failed: ${errMsg}`);
+      setToastSeverity('error');
+      setShowToast(true);
     }
-
-    // LOCAL EMULATOR SIMULATION FALLBACK
-    let currentStep = 0;
-    const interval = setInterval(() => {
-      if (currentStep < 13) {
-        setActiveStep(currentStep);
-        setStatusText(`Running stage: ${currentStep+1}/13`);
-        
-        // Add simulated logs
-        if (currentStep < simulationLogs.length) {
-          setLogs(prev => [...prev, simulationLogs[currentStep]]);
-        }
-        
-        currentStep++;
-      } else {
-        clearInterval(interval);
-        
-        // Populate results
-        const finalResults = mockXMLRecords.map((record, index) => {
-          const inkRatios = [0.2058, 0.2394, 0.1425, 0.1511, 0.1518, 0.1325];
-          return {
-            student_id: record.student_id,
-            student_name: record.name,
-            status: "Present",
-            signature_detected: true,
-            confidence: 1.0,
-            ink_ratio: inkRatios[index],
-            requires_review: false
-          };
-        });
-
-        setResults(finalResults);
-        setAnalytics({
-          total: 6,
-          present: 6,
-          absent: 0,
-          review: 0,
-          signatures: 6,
-          time: '0.84s'
-        });
-        
-        setProcessing(false);
-        setToastMsg("Document analyzed successfully (Simulation Mode)!");
-        setShowToast(true);
-      }
-    }, 600);
   };
 
   const handleReset = () => {
@@ -181,6 +124,7 @@ export default function Dashboard({ imageFile, setImageFile, xmlFile, setXmlFile
     setXmlFile(null);
     setResults([]);
     setLogs([]);
+    setSessionId(null);
     setActiveStep(-1);
     setStatusText('');
   };
@@ -260,10 +204,10 @@ export default function Dashboard({ imageFile, setImageFile, xmlFile, setXmlFile
           <StatisticsCard value={signatures} label="Signatures Found" />
         </Grid>
         <Grid item xs={6} sm={4} md={2}>
-          <StatisticsCard value={total > 0 ? "0.84s" : "0.00s"} label="Processing Time" />
+          <StatisticsCard value={total > 0 && analytics?.time ? analytics.time : "0.00s"} label="Processing Time" />
         </Grid>
       </Grid>
-
+ 
       {/* TABLE & CONSOLE GRIDS */}
       <Grid container spacing={3}>
         <Grid item xs={12} md={8}>
@@ -273,11 +217,11 @@ export default function Dashboard({ imageFile, setImageFile, xmlFile, setXmlFile
           <ProcessingLog logs={logs} />
         </Grid>
       </Grid>
-
+ 
       <LoadingOverlay active={processing} message="Executing AI Table Detection..." />
-
+ 
       <Snackbar open={showToast} autoHideDuration={3000} onClose={() => setShowToast(false)}>
-        <Alert onClose={() => setShowToast(false)} severity="success" sx={{ width: '100%' }}>
+        <Alert onClose={() => setShowToast(false)} severity={toastSeverity} sx={{ width: '100%' }}>
           {toastMsg}
         </Alert>
       </Snackbar>
