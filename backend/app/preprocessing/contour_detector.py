@@ -18,7 +18,7 @@ class ContourDetector:
         edges: np.ndarray,
     ) -> np.ndarray:
         
-        # Detect the largest rectangular contour.
+        # Detect the largest rectangular contour using robust direct and convex hull approximation.
 
         try:
 
@@ -26,8 +26,12 @@ class ContourDetector:
                 "Finding document contour..."
             )
 
+            # Dilate edges to close gaps
+            kernel = np.ones((5, 5), np.uint8)
+            dilated_edges = cv2.dilate(edges, kernel, iterations=1)
+
             contours, _ = cv2.findContours(
-                edges,
+                dilated_edges,
                 cv2.RETR_EXTERNAL,
                 cv2.CHAIN_APPROX_SIMPLE,
             )
@@ -44,38 +48,74 @@ class ContourDetector:
                 reverse=True,
             )
 
+            h_img, w_img = image_data.image.shape[:2]
+            img_area = h_img * w_img
+
+            # 1. Try finding direct 4-point contour first for large contours
             for contour in contours:
-
-                perimeter = cv2.arcLength(
-                    contour,
-                    True,
-                )
-
-                approximation = cv2.approxPolyDP(
-                    contour,
-                    0.02 * perimeter,
-                    True,
-                )
-
-                if len(approximation) == 4:
-
-                    image_data.processing_history[
-                        "Document Contour"
-                    ] = approximation
-
-                    image_data.set_stage(
-                        "Contour Detection"
+                area = cv2.contourArea(contour)
+                if area < 0.05 * img_area:
+                    continue
+                perimeter = cv2.arcLength(contour, True)
+                for eps in [0.02, 0.03, 0.04, 0.05, 0.06]:
+                    approximation = cv2.approxPolyDP(
+                        contour,
+                        eps * perimeter,
+                        True,
                     )
+                    if len(approximation) == 4:
+                        image_data.processing_history[
+                            "Document Contour"
+                        ] = approximation
+                        image_data.set_stage(
+                            "Contour Detection"
+                        )
+                        logger.info(
+                            "Direct 4-point document contour found."
+                        )
+                        return approximation
 
-                    logger.info(
-                        "Document contour found."
+            # 2. Try using convex hull of the largest contour
+            for contour in contours:
+                area = cv2.contourArea(contour)
+                if area < 0.05 * img_area:
+                    continue
+                hull = cv2.convexHull(contour)
+                perimeter = cv2.arcLength(hull, True)
+                for eps in [0.02, 0.03, 0.04, 0.05, 0.06]:
+                    approximation = cv2.approxPolyDP(
+                        hull,
+                        eps * perimeter,
+                        True,
                     )
+                    if len(approximation) == 4:
+                        image_data.processing_history[
+                            "Document Contour"
+                        ] = approximation
+                        image_data.set_stage(
+                            "Contour Detection"
+                        )
+                        logger.info(
+                            "Convex-hull 4-point document contour found."
+                        )
+                        return approximation
 
-                    return approximation
-
-            raise ImageProcessingError(
-                "No rectangular document found."
+            # 3. Fallback to whole image borders if no large contour matches
+            logger.info("No rectangular document found; falling back to whole image borders.")
+            fallback = np.array([
+                [[0, 0]],
+                [[w_img - 1, 0]],
+                [[w_img - 1, h_img - 1]],
+                [[0, h_img - 1]]
+            ], dtype="int32")
+            
+            image_data.processing_history[
+                "Document Contour"
+            ] = fallback
+            image_data.set_stage(
+                "Contour Detection"
             )
+            return fallback
 
         except Exception as ex:
 

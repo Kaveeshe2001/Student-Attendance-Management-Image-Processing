@@ -14,8 +14,8 @@ class HorizontalLineDetector:
     
     # Detect horizontal table lines.
 
-    DEFAULT_SCALE = 30
-    MIN_SCALE = 10
+    DEFAULT_SCALE = 12
+    MIN_SCALE = 5
 
     @staticmethod
     def detect(
@@ -55,10 +55,7 @@ class HorizontalLineDetector:
                 scale,
             )
 
-            kernel_width = max(
-                3,
-                width // scale,
-            )
+            kernel_width = min(120, max(40, width // 15))
 
             kernel = cv2.getStructuringElement(
                 cv2.MORPH_RECT,

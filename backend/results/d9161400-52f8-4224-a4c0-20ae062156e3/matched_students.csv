@@ -1,0 +1,7 @@
+Student ID,Student Name,Row,Column,OCR Text,Cleaned Text,Match Type,Match Score,OCR Confidence,Requires Review
+10000409,M S Dilshanika Perera,4,1,10000409,10000409,ID,100.0,54.0,False
+10009301,C W M A Shehan Abeyrathne,5,1,10009301 ay,10009301 ay,ID,100.0,59.0,False
+10009302,B A K M Chithrananda,6,1,"10009302,t—t*~*S",10009302t-tS,ID,100.0,0.0,False
+10009303,W Shashini Minosha De Silva,7,1,10009303,10009303,ID,100.0,94.0,False
+10009304,K L Udara Maduranga Liyanage,8,1,10009304 oe,10009304 oe,ID,100.0,59.0,False
+10009306,Hansa Anuradha Wickramanayake,9,1,10009306,10009306,ID,100.0,95.0,False

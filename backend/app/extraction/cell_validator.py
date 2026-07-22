@@ -39,8 +39,10 @@ class CellValidator:
         for cell in image_data.cells:
 
             image = cell["image"]
+            cell_id = cell.get("id", 0)
 
-            if CellValidator.is_valid(image):
+            is_cell_valid, reason = CellValidator.is_valid_with_reason(image)
+            if is_cell_valid:
 
                 cell["valid"] = True
 
@@ -49,6 +51,7 @@ class CellValidator:
             else:
 
                 cell["valid"] = False
+                logger.info("Cell %d rejected: %s", cell_id, reason)
 
         image_data.valid_cells = valid_cells
 
@@ -68,75 +71,84 @@ class CellValidator:
         return valid_cells
 
     @staticmethod
-    def is_valid(
+    def is_valid_with_reason(
         image: np.ndarray,
-    ) -> bool:
+    ) -> tuple[bool, str]:
         
-        # Validate a single cell image.
+        # Validate a single cell image and return reason.
 
         if image is None:
 
-            return False
+            return False, "image is None"
 
         if image.size == 0:
 
-            return False
+            return False, "image size is 0"
 
         h, w = image.shape[:2]
 
         if w < CellValidator.MIN_WIDTH:
 
-            return False
+            return False, f"width {w} < MIN_WIDTH {CellValidator.MIN_WIDTH}"
 
         if h < CellValidator.MIN_HEIGHT:
 
-            return False
+            return False, f"height {h} < MIN_HEIGHT {CellValidator.MIN_HEIGHT}"
 
         if w * h < CellValidator.MIN_AREA:
 
-            return False
+            return False, f"area {w * h} < MIN_AREA {CellValidator.MIN_AREA}"
 
-        if CellValidator.is_blank(image):
+        # Safe conversion to grayscale
+        if len(image.shape) == 3:
+            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        else:
+            gray = image.copy()
 
-            return False
+        std_val = np.std(gray)
+        if std_val < 5:
 
-        if CellValidator.is_blurry(image):
+            return False, f"blank cell (std {std_val:.2f} < 5)"
 
-            return False
+        variance = cv2.Laplacian(
+            gray,
+            cv2.CV_64F,
+        ).var()
+        if variance < CellValidator.MIN_VARIANCE:
 
-        return True
+            return False, f"blurry cell (variance {variance:.2f} < {CellValidator.MIN_VARIANCE})"
+
+        return True, "Valid"
+
+    @staticmethod
+    def is_valid(
+        image: np.ndarray,
+    ) -> bool:
+        valid, _ = CellValidator.is_valid_with_reason(image)
+        return valid
 
     @staticmethod
     def is_blank(
         image: np.ndarray,
     ) -> bool:
-        
-        # Check if image is blank.
-
-        gray = cv2.cvtColor(
-            image,
-            cv2.COLOR_BGR2GRAY,
-        )
-
+        if len(image.shape) == 3:
+            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        else:
+            gray = image.copy()
         return np.std(gray) < 5
 
     @staticmethod
     def is_blurry(
         image: np.ndarray,
     ) -> bool:
-        
-        # Detect blur using Laplacian variance.
-
-        gray = cv2.cvtColor(
-            image,
-            cv2.COLOR_BGR2GRAY,
-        )
-
+        if len(image.shape) == 3:
+            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        else:
+            gray = image.copy()
         variance = cv2.Laplacian(
             gray,
             cv2.CV_64F,
         ).var()
-
         return variance < CellValidator.MIN_VARIANCE
 
     @staticmethod

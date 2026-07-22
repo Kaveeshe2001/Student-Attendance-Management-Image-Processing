@@ -14,8 +14,8 @@ class VerticalLineDetector:
     
     # Detect vertical table lines.
 
-    DEFAULT_SCALE = 30
-    MIN_SCALE = 10
+    DEFAULT_SCALE = 6
+    MIN_SCALE = 3
 
     @staticmethod
     def detect(
@@ -55,10 +55,7 @@ class VerticalLineDetector:
                 scale,
             )
 
-            kernel_height = max(
-                3,
-                height // scale,
-            )
+            kernel_height = min(60, max(25, height // 15))
 
             kernel = cv2.getStructuringElement(
                 cv2.MORPH_RECT,

@@ -317,6 +317,10 @@ class GridGenerator:
 
                     lower[c + 1],
 
+                    row=r,
+
+                    column=c,
+
                 )
 
                 cells.append(cell)
@@ -337,6 +341,8 @@ class GridGenerator:
         top_right,
         bottom_left,
         bottom_right,
+        row=0,
+        column=0,
     ):
         
         # Create one cell dictionary.
@@ -356,6 +362,10 @@ class GridGenerator:
             "bottom_left": bottom_left,
 
             "bottom_right": bottom_right,
+
+            "row": row,
+
+            "column": column,
 
             "bbox": (
 

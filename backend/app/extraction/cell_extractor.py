@@ -68,14 +68,14 @@ class CellExtractor:
             extracted_cells.append(
                 {
                     "id": index,
-                    "row": CellExtractor._row(
+                    "row": cell.get("row", CellExtractor._row(
                         image_data,
                         cell,
-                    ),
-                    "column": CellExtractor._column(
+                    )),
+                    "column": cell.get("column", CellExtractor._column(
                         image_data,
                         cell,
-                    ),
+                    )),
                     "bbox": bbox,
                     "image": roi,
                     "width": w,

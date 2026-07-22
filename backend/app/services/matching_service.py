@@ -45,6 +45,9 @@ class MatchingService:
             or []
         )
 
+        if not record_source:
+            raise ImageProcessingError("Matching failed: Student records list from XML is empty.")
+
         raw_matches = StudentMatcher.match(
 
             image_data,

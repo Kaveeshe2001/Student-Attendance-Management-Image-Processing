@@ -30,6 +30,23 @@ class AttendanceResult:
         default_factory=dict
     )
 
+    match: any = None
+
+    signature: any = None
+
+    def get(self, key: str, default: any = None) -> any:
+        if key == "match":
+            return self.match
+        elif key == "signature":
+            return self.signature
+        elif key == "status":
+            return self.status
+        try:
+            return getattr(self, key)
+        except AttributeError:
+            return default
+
+
     @property
     def is_present(
         self,
@@ -171,6 +188,10 @@ class AttendanceResult:
             ),
 
             metadata=signature,
+
+            match=match,
+
+            signature=signature,
 
         )
 

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from app.database.database import get_db
 from app.database.repositories import SessionRepository
@@ -10,9 +10,9 @@ router = APIRouter(
 )
 
 @router.get("/{session_id}")
-def get_session_visualizations(session_id: str, db: Session = Depends(get_db)):
+def get_session_visualizations(session_id: str, request: Request, db: Session = Depends(get_db)):
     """
-    Get local server URLs for the intermediate pipeline images generated in this session.
+    Get absolute server URLs for the intermediate pipeline images generated in this session.
     """
     session = SessionRepository.get_session(db, session_id)
     if not session:
@@ -42,12 +42,14 @@ def get_session_visualizations(session_id: str, db: Session = Depends(get_db)):
         "attendance": "attendance.png"
     }
     
+    base_url = str(request.base_url)
     urls = {}
     for key, filename in visual_files.items():
         file_path = os.path.join(results_path, filename)
         if os.path.exists(file_path):
-            urls[key] = f"/results/{session_id}/{filename}"
+            urls[key] = f"{base_url}results/{session_id}/{filename}"
         else:
             urls[key] = None
             
     return urls
+

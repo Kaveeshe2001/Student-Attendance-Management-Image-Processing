@@ -31,7 +31,7 @@ class SignatureDetector:
             match,
         )
 
-        if cell is None:
+        if cell is None or cell.get("image") is None:
 
             return {
 
@@ -41,41 +41,89 @@ class SignatureDetector:
 
                 "ink_ratio": 0.0,
 
+                "contour_count": 0,
+
+                "connected_components": 0,
+
+                "review_required": False,
+
+                "bbox": None,
+
             }
 
+        cell_image = cell["image"]
+
         binary = SignatureDetector.preprocess(
-            cell
+            cell_image
         )
 
         cleaned = SignatureDetector.remove_table_lines(
             binary
         )
 
+        # Calculate connected components and filter by area to remove noise
+        num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(cleaned)
+        MIN_COMPONENT_AREA = 15  # minimum area for a valid stroke component
+        filtered_cleaned = np.zeros_like(cleaned)
+        connected_components = 0
+        largest_area = 0
+
+        for i in range(1, num_labels):
+            area = stats[i, cv2.CC_STAT_AREA]
+            if area > largest_area:
+                largest_area = area
+            if area >= MIN_COMPONENT_AREA:
+                connected_components += 1
+                filtered_cleaned[labels == i] = 255
+
+        # Calculate contours on the filtered mask
+        contours, _ = cv2.findContours(
+            filtered_cleaned,
+            cv2.RETR_EXTERNAL,
+            cv2.CHAIN_APPROX_SIMPLE,
+        )
+        contour_count = len(contours)
+
+        # Calculate ink ratio on the filtered mask
         ink_ratio = SignatureDetector.calculate_ink_ratio(
-            cleaned
+            filtered_cleaned
         )
 
-        confidence = SignatureDetector.calculate_confidence(
-            ink_ratio
-        )
+        # Robust mathematical classification boundaries
+        if ink_ratio < 0.010 or connected_components <= 2:
+            # Clearly Absent
+            present = False
+            review_required = False
+            confidence = (1.0 - (ink_ratio / 0.010)) * 100.0 if ink_ratio < 0.010 else 90.0
+        elif ink_ratio >= 0.020 and connected_components >= 5:
+            # Clearly Present
+            present = True
+            review_required = False
+            confidence = 80.0 + (ink_ratio * 150.0) + min(connected_components, 10) * 1.0
+        else:
+            # Genuinely uncertain transition state, requires Manual Review
+            present = ink_ratio >= 0.015 or connected_components >= 3
+            confidence = 50.0 + (ink_ratio * 300.0)
+            review_required = True
 
-        present = (
-
-            ink_ratio >=
-            SignatureDetector.PRESENT_THRESHOLD
-
-        )
+        confidence = round(float(np.clip(confidence, 0.0, 100.0)), 2)
 
         logger.info(
-
             "Signature detected | "
             "Ink Ratio: %.4f | "
-            "Confidence: %.2f",
-
+            "Valid Components: %d | "
+            "Largest Component Area: %d | "
+            "Contour Count: %d | "
+            "Confidence: %.2f | "
+            "Present: %s | "
+            "Review: %s",
             ink_ratio,
-
+            connected_components,
+            largest_area,
+            contour_count,
             confidence,
-
+            present,
+            review_required
         )
 
         return {
@@ -86,7 +134,15 @@ class SignatureDetector:
 
             "ink_ratio": ink_ratio,
 
-            "image": cleaned,
+            "contour_count": contour_count,
+
+            "connected_components": connected_components,
+
+            "review_required": review_required,
+
+            "image": filtered_cleaned,
+
+            "bbox": cell.get("bbox"),
 
         }
 
@@ -96,19 +152,26 @@ class SignatureDetector:
         match,
     ):
         
-        # Retrieve the signature cell image.
+        # Retrieve the signature cell dictionary.
 
         if hasattr(
-
             match,
-
             "metadata",
+        ) and match.metadata and "signature_cell" in match.metadata:
 
-        ):
+            return match.metadata["signature_cell"]
 
-            return match.metadata.get(
-                "signature_cell"
-            )
+        # Fallback: Find the cell in image_data.cells where row == match.row and column == 5 (or max col)
+        row_idx = getattr(match, "row", None)
+        if row_idx is not None and hasattr(image_data, "cells") and image_data.cells:
+            # Check for column 5 (default signature column)
+            for cell in image_data.cells:
+                if cell.get("row") == row_idx and cell.get("column") == 5:
+                    return cell
+            # Check for max column in that row
+            row_cells = [c for c in image_data.cells if c.get("row") == row_idx]
+            if row_cells:
+                return max(row_cells, key=lambda c: c.get("column", 0))
 
         return None
 

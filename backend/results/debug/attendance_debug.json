@@ -1,0 +1,18 @@
+[
+  {
+    "student_id": "10009304",
+    "student_name": "K L Udara Maduranga Liyanage",
+    "signature_detected": true,
+    "ink_ratio": 0.033130904183535766,
+    "attendance": "Present",
+    "reason": "Ink ratio 0.0331 (threshold True)"
+  },
+  {
+    "student_id": "10009306",
+    "student_name": "Hansa Anuradha Wickramanayake",
+    "signature_detected": true,
+    "ink_ratio": 0.07189345142243693,
+    "attendance": "Present",
+    "reason": "Ink ratio 0.0719 (threshold True)"
+  }
+]

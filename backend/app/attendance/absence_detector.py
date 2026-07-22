@@ -25,34 +25,7 @@ class AbsenceDetector:
 
             return True
 
-        present = signature.get(
-            "present",
-            False,
-        )
-
-        confidence = signature.get(
-            "confidence",
-            0.0,
-        )
-
-        ink_ratio = signature.get(
-            "ink_ratio",
-            0.0,
-        )
-
-        if (
-
-            not present
-
-            and
-
-            confidence >= AbsenceDetector.MIN_CONFIDENCE
-
-            and
-
-            ink_ratio <= AbsenceDetector.MAX_INK_RATIO
-
-        ):
+        if not signature.get("present", False) and not signature.get("review_required", False):
 
             logger.info(
                 "Student marked ABSENT."
@@ -158,25 +131,7 @@ class AbsenceDetector:
 
             return False
 
-        confidence = signature.get(
-            "confidence",
-            0.0,
-        )
-
-        ink = signature.get(
-            "ink_ratio",
-            0.0,
-        )
-
-        return (
-
-            confidence < AbsenceDetector.MIN_CONFIDENCE
-
-            and
-
-            ink > AbsenceDetector.MAX_INK_RATIO
-
-        )
+        return signature.get("review_required", False)
 
     @staticmethod
     def summary(

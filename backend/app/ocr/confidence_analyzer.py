@@ -43,6 +43,10 @@ class ConfidenceAnalyzer:
                 )
             )
 
+            if confidence <= 1.0:
+                confidence = confidence * 100.0
+                result["confidence"] = confidence
+
             confidences.append(
                 confidence
             )
@@ -115,6 +119,9 @@ class ConfidenceAnalyzer:
     ) -> str:
         
         # Classify confidence level.
+
+        if confidence <= 1.0:
+            confidence = confidence * 100.0
 
         if confidence >= ConfidenceAnalyzer.HIGH_THRESHOLD:
 

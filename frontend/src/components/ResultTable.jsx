@@ -131,7 +131,7 @@ export default function ResultTable({ rows }) {
                     />
                   </TableCell>
                   <TableCell sx={{ fontWeight: 500 }}>
-                    {row.confidence ? `${(row.confidence * 100).toFixed(0)}%` : '0%'}
+                    {row.confidence ? `${(row.confidence > 1.0 ? row.confidence : row.confidence * 100).toFixed(0)}%` : '0%'}
                   </TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>
                     {row.ink_ratio ? `${(row.ink_ratio * 100).toFixed(1)}%` : '0.0%'}

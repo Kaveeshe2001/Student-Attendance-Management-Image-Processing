@@ -39,7 +39,7 @@ class ThresholdService:
 
             if use_global:
 
-                GlobalThreshold.apply(image_data)
+                GlobalThreshold.apply(image_data, inverse=True)
 
                 image_data.binary_image = (
                     image_data.global_threshold_image
@@ -47,7 +47,7 @@ class ThresholdService:
 
             if use_otsu:
 
-                OtsuThreshold.apply(image_data)
+                OtsuThreshold.apply(image_data, inverse=True)
 
                 image_data.binary_image = (
                     image_data.otsu_image
@@ -55,7 +55,7 @@ class ThresholdService:
 
             if use_adaptive_mean:
 
-                AdaptiveThreshold.mean(image_data)
+                AdaptiveThreshold.mean(image_data, inverse=True)
 
                 image_data.binary_image = (
                     image_data.adaptive_mean_image
@@ -63,7 +63,7 @@ class ThresholdService:
 
             if use_adaptive_gaussian:
 
-                AdaptiveThreshold.gaussian(image_data)
+                AdaptiveThreshold.gaussian(image_data, inverse=True)
 
                 image_data.binary_image = (
                     image_data.adaptive_gaussian_image

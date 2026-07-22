@@ -24,34 +24,7 @@ class PresenceDetector:
 
             return False
 
-        present = signature.get(
-            "present",
-            False,
-        )
-
-        confidence = signature.get(
-            "confidence",
-            0.0,
-        )
-
-        ink_ratio = signature.get(
-            "ink_ratio",
-            0.0,
-        )
-
-        if (
-
-            present
-
-            and
-
-            confidence >= PresenceDetector.MIN_CONFIDENCE
-
-            and
-
-            ink_ratio >= PresenceDetector.MIN_INK_RATIO
-
-        ):
+        if signature.get("present", False) and not signature.get("review_required", False):
 
             logger.info(
                 "Student marked PRESENT."

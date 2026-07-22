@@ -27,10 +27,12 @@ class MatchingStatistics:
 
         for match in matches:
 
-            match_type = match.get(
-                "match_type",
-                "",
-            )
+            if isinstance(match, dict):
+                match_type = match.get("match_type", "")
+                match_score = match.get("match_score", 0.0)
+            else:
+                match_type = getattr(match, "match_type", "")
+                match_score = getattr(match, "match_score", 0.0)
 
             if match_type in (
                 "ID",
@@ -52,10 +54,7 @@ class MatchingStatistics:
 
             if (
 
-                match.get(
-                    "match_score",
-                    0.0,
-                ) < 90
+                match_score < 90
 
                 or
 

@@ -41,14 +41,14 @@ export default function Statistics({ results, imageFile, sessionId }) {
         t: new Date().getTime()
       }
     })
-    .then(res => {
-      setStats(res.data);
-      setLoading(false);
-    })
-    .catch(err => {
-      console.error("Failed to load session statistics:", err);
-      setLoading(false);
-    });
+      .then(res => {
+        setStats(res.data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error("Failed to load session statistics:", err);
+        setLoading(false);
+      });
   }, [sessionId]);
 
   const total = results.length;

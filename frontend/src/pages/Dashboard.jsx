@@ -76,7 +76,8 @@ export default function Dashboard({ imageFile, setImageFile, xmlFile, setXmlFile
           axios.get(`/api/statistics/${session_id}`, cacheBypassConfig)
         ]);
 
-        setResults(resultsRes.data.map(r => ({
+        const studentsList = resultsRes.data.students || [];
+        setResults(studentsList.map(r => ({
           student_id: r.student_id,
           student_name: r.student_name,
           status: r.attendance,

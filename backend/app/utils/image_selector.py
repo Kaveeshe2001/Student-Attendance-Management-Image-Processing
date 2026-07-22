@@ -25,6 +25,8 @@ class ImageSelector:
 
         priority = (
 
+            getattr(image_data, "binary_image", None),
+
             getattr(image_data, "closed_image", None),
 
             getattr(image_data, "opened_image", None),

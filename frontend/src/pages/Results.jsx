@@ -11,16 +11,16 @@ export default function Results({ results, imageFile, sessionId }) {
         r.student_id,
         r.student_name,
         r.status,
-        (r.confidence * 100).toFixed(2) + '%',
+        Number(r.confidence).toFixed(2) + '%',
         r.ink_ratio.toFixed(4),
         r.requires_review ? 'Yes' : 'No'
       ]);
-      
+
       const csvContent = [
-        headers.join(','), 
+        headers.join(','),
         ...csvRows.map(row => row.map(val => `"${val.replace(/"/g, '""')}"`).join(','))
       ].join('\n');
-      
+
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");

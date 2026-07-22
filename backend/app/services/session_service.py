@@ -3,6 +3,7 @@ import uuid
 import time
 import shutil
 import logging
+import json
 from datetime import datetime
 from pathlib import Path
 import cv2
@@ -13,6 +14,9 @@ from app.sams import SAMS
 from app.database.models import ProcessingSession, StudentRecord, ProcessingLog, Statistic
 from app.database.repositories import SessionRepository, StudentRecordRepository, ProcessingLogRepository, StatisticRepository
 from app.visualization.table_visualizer import TableVisualizer
+from app.visualization.student_table import StudentTable
+from app.utils.logger import logger as app_logger
+from app.utils.serializer import serialize_result
 
 # Configure logging interception
 class CaptureLogsHandler(logging.Handler):
@@ -36,21 +40,18 @@ class SessionService:
         created_at = datetime.utcnow()
         
         # Paths setup
-        temp_dir = Path("./temp/uploads")
         results_dir = Path(f"./results/{session_id}")
-        
-        temp_dir.mkdir(parents=True, exist_ok=True)
         results_dir.mkdir(parents=True, exist_ok=True)
         
-        # Unique temporary file names
+        # Unique persistent file names stored in the session directory
         timestamp_prefix = created_at.strftime("%Y%m%d_%H%M%S")
-        temp_image_path = temp_dir / f"{timestamp_prefix}_{uuid.uuid4().hex[:6]}_{image_filename}"
-        temp_xml_path = temp_dir / f"{timestamp_prefix}_{uuid.uuid4().hex[:6]}_{xml_filename}"
+        persistent_image_path = results_dir / f"{timestamp_prefix}_image_{image_filename}"
+        persistent_xml_path = results_dir / f"{timestamp_prefix}_xml_{xml_filename}"
         
-        # Save temp files
-        with open(temp_image_path, "wb") as f:
+        # Save persistent files
+        with open(persistent_image_path, "wb") as f:
             f.write(image_bytes)
-        with open(temp_xml_path, "wb") as f:
+        with open(persistent_xml_path, "wb") as f:
             f.write(xml_bytes)
             
         # Logging attachment
@@ -71,7 +72,7 @@ class SessionService:
         
         try:
             # Run SAMS pipeline
-            sams = SAMS(image_path=temp_image_path, xml_path=temp_xml_path)
+            sams = SAMS(image_path=persistent_image_path, xml_path=persistent_xml_path)
             image_data = sams.run()
             
             processing_time = round(time.time() - start_time, 3)
@@ -157,6 +158,12 @@ class SessionService:
                             cv2.putText(att_img, f"{status_str}", (x - 120, y + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
                 cv2.imwrite(str(results_dir / "attendance.png"), att_img)
 
+            # Save match results to CSV in the persistent folder
+            try:
+                StudentTable.export_csv(image_data, results_dir / "matched_students.csv")
+            except Exception as csv_err:
+                app_logger.error(f"Failed to export CSV: {csv_err}")
+
             # Parse results statistics
             total_students = len(image_data.attendance_results or [])
             present_students = len(image_data.present_students or [])
@@ -164,6 +171,61 @@ class SessionService:
             manual_review_students = total_students - present_students - absent_students
             
             att_rate = round((present_students / total_students * 100), 2) if total_students > 0 else 0.0
+            
+            # Serialize fields for SQLite
+            serialized_students = [res.to_dict() for res in (image_data.attendance_results or [])]
+            serialized_ocr = image_data.ocr_results or []
+            serialized_matches = [m.to_dict() for m in (image_data.matched_students or [])]
+            
+            detected_sigs = []
+            for r in (image_data.attendance_results or []):
+                sig = r.get("signature")
+                if sig:
+                    detected_sigs.append(sig if isinstance(sig, dict) else {
+                        "present": getattr(sig, "present", False),
+                        "confidence": getattr(sig, "confidence", 0.0),
+                        "ink_ratio": getattr(sig, "ink_ratio", 0.0),
+                        "bbox": getattr(sig, "bbox", None)
+                    })
+            
+            conf_vals = {
+                "ocr": [float(res.get("confidence", 0.0)) for res in (image_data.ocr_results or [])],
+                "signature": [float(r.get("confidence", 0.0)) for r in (image_data.attendance_results or []) if r.get("signature")]
+            }
+            
+            vis_paths = {
+                "original": f"results/{session_id}/original.png",
+                "perspective": f"results/{session_id}/perspective.png",
+                "grayscale": f"results/{session_id}/grayscale.png",
+                "threshold": f"results/{session_id}/threshold.png",
+                "table": f"results/{session_id}/table.png",
+                "grid": f"results/{session_id}/grid.png",
+                "cells": f"results/{session_id}/cells.png",
+                "ocr": f"results/{session_id}/ocr.png",
+                "signature": f"results/{session_id}/signature.png",
+                "attendance": f"results/{session_id}/attendance.png"
+            }
+
+            # Add log write stage
+            log_capturer.log_entries.append({
+                "stage": "Database Save",
+                "message": "Session attendance records written to SQLite database.",
+                "level": "INFO",
+                "timestamp": datetime.utcnow()
+            })
+
+            # Save log file in the persistent folder
+            try:
+                log_file_path = results_dir / "processing.log"
+                with open(log_file_path, "w", encoding="utf-8") as lf:
+                    for log_val in log_capturer.log_entries:
+                        lf.write(f"[{log_val['level']}] [{log_val['stage']}] {log_val['message']}\n")
+            except Exception as log_err:
+                app_logger.error(f"Failed to write log file: {log_err}")
+
+            # Logs required by prompt
+            app_logger.info("Saving Job...")
+            app_logger.info("Saving Results...")
             
             # Create ProcessingSession database row
             session_row = ProcessingSession(
@@ -176,7 +238,17 @@ class SessionService:
                 attendance_rate=att_rate,
                 present_students=present_students,
                 absent_students=absent_students,
-                manual_review=manual_review_students
+                manual_review=manual_review_students,
+                ocr_results=json.dumps(serialize_result(serialized_ocr)),
+                matched_students=json.dumps(serialize_result(serialized_matches)),
+                detected_signatures=json.dumps(serialize_result(detected_sigs)),
+                confidence_values=json.dumps(serialize_result(conf_vals)),
+                visualization_paths=json.dumps(serialize_result(vis_paths)),
+                csv_path=f"results/{session_id}/matched_students.csv",
+                logs_path=f"results/{session_id}/processing.log",
+                temp_image_path=str(persistent_image_path),
+                temp_xml_path=str(persistent_xml_path),
+                student_list=json.dumps(serialize_result(serialized_students))
             )
             SessionRepository.create_session(db, session_row)
             
@@ -194,15 +266,15 @@ class SessionService:
                 requires_review = False
                 
                 if match:
-                    student_id = getattr(match, "student_id", getattr(match, "id", match.get("student_id", match.get("id", "Unknown"))))
-                    student_name = getattr(match, "name", match.get("name", "Unknown"))
-                    detected_name = getattr(match, "detected_name", match.get("detected_name", ""))
-                    confidence = getattr(match, "confidence", match.get("confidence", 1.0))
-                    requires_review = getattr(match, "requires_review", match.get("requires_review", False))
+                    student_id = getattr(match, "student_id", getattr(match, "id", match.get("student_id", match.get("id", "Unknown")))) if isinstance(match, dict) else getattr(match, "student_id", "Unknown")
+                    student_name = getattr(match, "student_name", "Unknown")
+                    detected_name = getattr(match, "cleaned_text", getattr(match, "ocr_text", ""))
+                    confidence = getattr(match, "confidence", 1.0)
+                    requires_review = getattr(match, "requires_review", False)
 
                 sig_detected = False
                 if sig:
-                    sig_detected = getattr(sig, "is_signed", sig.get("is_signed", status_str == "Present"))
+                    sig_detected = sig.get("present", status_str == "Present")
 
                 db_records.append(StudentRecord(
                     session_id=session_id,
@@ -222,7 +294,7 @@ class SessionService:
             valid_cells_count = len(image_data.valid_cells or [])
             ocr_text_count = len(image_data.recognized_text or [])
             matched_count = len(image_data.matched_students or [])
-            sig_count = image_data.detected_signatures
+            sig_count = present_students
             
             statistic_row = Statistic(
                 session_id=session_id,
@@ -234,14 +306,6 @@ class SessionService:
                 signatures=sig_count
             )
             StatisticRepository.create_statistic(db, statistic_row)
-            
-            # Add final logs
-            log_capturer.log_entries.append({
-                "stage": "Database Save",
-                "message": "Session attendance records written to SQLite database.",
-                "level": "INFO",
-                "timestamp": datetime.utcnow()
-            })
             
             # Write intercepted logs to table
             db_logs = []
@@ -255,6 +319,7 @@ class SessionService:
                 ))
             ProcessingLogRepository.add_logs(db, db_logs)
             
+            app_logger.info("Result Stored.")
             return session_row
             
         except Exception as e:
@@ -269,30 +334,46 @@ class SessionService:
                 image_name=image_filename,
                 xml_name=xml_filename,
                 processing_time=round(time.time() - start_time, 3),
-                status=status
+                status=status,
+                csv_path=None,
+                logs_path=f"results/{session_id}/processing.log",
+                temp_image_path=str(persistent_image_path),
+                temp_xml_path=str(persistent_xml_path)
             )
             db.add(failed_session)
             db.commit()
             
-            # Save error log
-            error_log = ProcessingLog(
-                session_id=session_id,
-                stage="Pipeline",
-                message=f"Pipeline crashed with exception: {error_msg}",
-                level="ERROR",
-                timestamp=datetime.utcnow()
-            )
-            db.add(error_log)
-            db.commit()
+            # Append final error log
+            log_capturer.log_entries.append({
+                "stage": "Pipeline",
+                "message": f"Pipeline crashed with exception: {error_msg}",
+                "level": "ERROR",
+                "timestamp": datetime.utcnow()
+            })
+            
+            # Write logs to processing.log file
+            try:
+                log_file_path = results_dir / "processing.log"
+                with open(log_file_path, "w", encoding="utf-8") as lf:
+                    for log_val in log_capturer.log_entries:
+                        lf.write(f"[{log_val['level']}] [{log_val['stage']}] {log_val['message']}\n")
+            except Exception:
+                pass
+
+            # Save error log inside database table
+            db_logs = []
+            for log_val in log_capturer.log_entries:
+                db_logs.append(ProcessingLog(
+                    session_id=session_id,
+                    stage=log_val["stage"],
+                    message=log_val["message"],
+                    level=log_val["level"],
+                    timestamp=log_val["timestamp"]
+                ))
+            ProcessingLogRepository.add_logs(db, db_logs)
             
             raise e
             
         finally:
             # Remove custom logger handler
             sams_logger.removeHandler(log_capturer)
-            
-            # Delete temporary files automatically
-            if temp_image_path.exists():
-                os.remove(temp_image_path)
-            if temp_xml_path.exists():
-                os.remove(temp_xml_path)

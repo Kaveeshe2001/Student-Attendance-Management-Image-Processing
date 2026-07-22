@@ -10,6 +10,7 @@ router = APIRouter(
     tags=["sessions"]
 )
 
+@router.get("/history", response_model=list[ProcessingSession])
 @router.get("/sessions", response_model=list[ProcessingSession])
 def get_previous_sessions(db: Session = Depends(get_db)):
     """
@@ -17,6 +18,7 @@ def get_previous_sessions(db: Session = Depends(get_db)):
     """
     return SessionRepository.list_sessions(db)
 
+@router.delete("/history/{session_id}", status_code=status.HTTP_200_OK)
 @router.delete("/session/{session_id}", status_code=status.HTTP_200_OK)
 def delete_processing_session(session_id: str, db: Session = Depends(get_db)):
     """
